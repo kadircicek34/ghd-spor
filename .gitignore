@@ -1,0 +1,114 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment — never commit real values
+.env
+.env.*
+!.env.example
+*.local
+
+# PocketBase runtime data (database, uploads, logs)
+# Contains user data and auth tokens — never public
+pb_data/
+# Local AI-generated media staging and its PocketBase upload helper.
+# Assets in this directory are intentionally never part of Git history.
+/.local/calistenia-media/
+# Local docker-compose bind-mount data directory
+pb_data_local/
+
+# PocketBase binary — large (~32MB), platform-specific, download from pocketbase.io
+pocketbase
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Test artifacts
+test-results/
+playwright-report/
+.playwright-mcp/
+**/.playwright-mcp/
+pb_data_backup_*/
+
+# Dev/build logs (metro, gradle, eas, pocketbase, ai api, vite, …)
+*.log
+
+# Codex AI agent config
+.codex/
+
+# AI agent config — project-specific tooling, not needed by contributors
+.agents/
+.agent/
+.claude/
+
+# Screenshot files generated during development/testing
+*.png
+*.jpg
+*.jpeg
+
+# But allow images in public/ (logo, favicons, etc.)
+!**/public/*.png
+!**/public/*.jpg
+!**/public/*.jpeg
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.jpeg
+
+# ...and E2E test fixtures
+!apps/web/tests/fixtures/*.jpg
+
+# ...and the README screenshots (#813)
+!.github/readme/*.png
+
+# OpenCode AI agent config
+opencode.json
+skills-lock.json
+
+# Editor
+.vscode/
+.idea/
+
+# Secrets and credentials
+secret.json
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+# Clave de publicación de Google Play: quien la tenga puede subir releases a
+# la ficha. El patrón de arriba no casa con nombres como
+# `calistenia-play-service-account.json`, así que se amplía.
+*service-account*.json
+*play-publisher*.json
+# Sentry Config File
+.env.sentry-build-plugin
+*firebase-adminsdk*.json
+apps/mobile/calistenia-*-firebase-adminsdk-*.json
+
+# Android signing keystores — NUNCA commitear (llave de firma privada)
+*.jks
+*.keystore
+!apps/mobile/android/app/debug.keystore
+
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
+# design-sync (claude.ai/design)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+apps/web/.ds-entry.css
+apps/web/.ds-compiled.css
+apps/web/ds-types/
+
+# deploy secrets (never commit)
+.deploy-secrets
+
+# local backups
+backups/

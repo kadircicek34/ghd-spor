@@ -1,0 +1,183 @@
+import i18n from './i18n'
+import { localizedWebUrl } from '@calistenia/core/lib/app-urls'
+import { buildProgramShareContent } from '@calistenia/core/lib/programShare'
+
+/** Deep link to a single saved cardio session's detail page. */
+export function cardioUrl(id: string): string {
+  return localizedWebUrl(`/cardio/session/${id}`, i18n.language)
+}
+
+export type ShareMethod = 'native' | 'whatsapp' | 'copy'
+
+interface ShareContentOptions {
+  title: string
+  text: string
+  url: string
+}
+
+/**
+ * Share a link with customized text via native share, WhatsApp, or clipboard.
+ * Returns true if shared successfully, false if cancelled/failed.
+ */
+export async function shareContent(opts: ShareContentOptions, method: ShareMethod = 'native'): Promise<boolean> {
+  const fullMessage = `${opts.text}\n${opts.url}`
+
+  if (method === 'whatsapp') {
+    window.open(`https://wa.me/?text=${encodeURIComponent(fullMessage)}`, '_blank')
+    return true
+  }
+
+  if (method === 'native' && navigator.share) {
+    try {
+      await navigator.share({ title: opts.title, text: opts.text, url: opts.url })
+      return true
+    } catch {
+      // User cancelled
+      return false
+    }
+  }
+
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.writeText(fullMessage)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ── Pre-built share messages per content type ──────────────────────────────
+
+export function shareProfile(displayName: string, userId: string, method?: ShareMethod) {
+  return shareContent({
+    title: i18n.t('share.profileTitle', { name: displayName }),
+    text: i18n.t('share.profileText', { name: displayName }),
+    url: localizedWebUrl(`/u/${userId}`, i18n.language),
+  }, method)
+}
+
+export function shareRoutine(userName: string, programName: string, userId: string, method?: ShareMethod) {
+  return shareContent({
+    title: i18n.t('share.routineTitle', { user: userName, program: programName }),
+    text: i18n.t('share.routineText', { user: userName, program: programName }),
+    url: localizedWebUrl(`/u/${userId}/routine`, i18n.language),
+  }, method)
+}
+
+/**
+ * La URL y el título los construye core (#604). Había una segunda `shareProgram`
+ * dentro de `ProgramsPage.tsx` —y era ESA la que colgaba del botón de las
+ * tarjetas, así que esta no la llamaba nadie— que armaba el enlace con
+ * `window.location.origin`: en local generaba un `http://localhost:5173/shared/…`
+ * inservible para quien lo recibía.
+ */
+export function shareProgram(programName: string, programId: string, method?: ShareMethod) {
+  return shareContent(
+    buildProgramShareContent(
+      programName,
+      programId,
+      i18n.t('share.programText', { name: programName }),
+      i18n.language,
+    ),
+    method,
+  )
+}
+
+export function shareChallenge(challengeTitle: string, challengeId: string, method?: ShareMethod) {
+  return shareContent({
+    title: challengeTitle,
+    text: i18n.t('share.challengeText', { title: challengeTitle }),
+    url: localizedWebUrl(`/challenges/${challengeId}`, i18n.language),
+  }, method)
+}
+
+export function shareWorkoutSession(userName: string, workoutTitle: string, date: string, workoutKey: string, method?: ShareMethod) {
+  return shareContent({
+    title: i18n.t('share.sessionTitle', { user: userName, workout: workoutTitle }),
+    text: i18n.t('share.sessionText', { user: userName, workout: workoutTitle }),
+    url: localizedWebUrl(`/session/${date}/${workoutKey}`, i18n.language),
+  }, method)
+}
+
+export function shareReferralInvite(displayName: string, referralCode: string, method?: ShareMethod) {
+  return shareContent({
+    title: i18n.t('share.referralTitle', { name: displayName }),
+    text: i18n.t('share.referralText', { name: displayName }),
+    url: localizedWebUrl(`/invite/${referralCode}`, i18n.language),
+  }, method)
+}
+
+export function shareRace(raceName: string, raceId: string, method?: ShareMethod) {
+  return shareContent({
+    title: raceName,
+    text: `"${raceName}" yarışına katıl! 🏃`,
+    url: localizedWebUrl(`/race/${raceId}`, i18n.language),
+  }, method)
+}
+
+export function shareApp(method?: ShareMethod) {
+  return shareContent({
+    title: 'GHD Spor',
+    text: i18n.t('share.appText'),
+    url: localizedWebUrl('/', i18n.language),
+  }, method)
+}
+
+/** How an image export actually completed, for analytics. */
+export type ShareImageOutcome = 'shared' | 'downloaded'
+
+/**
+ * Share an image blob via Web Share API with proper canShare check,
+ * falling back to download if file sharing is not supported.
+ *
+ * Returns how it completed: 'shared' only when the Web Share API resolved (the
+ * user went through with it). Cancelling the sheet falls back to a download and
+ * returns 'downloaded', so callers can avoid counting it as a confirmed share.
+ */
+export async function shareImage(blob: Blob, filename: string, title?: string, text?: string): Promise<ShareImageOutcome> {
+  const file = new File([blob], filename, { type: 'image/png' })
+
+  // Check if the browser supports sharing files specifically
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title, text })
+      return 'shared'
+    } catch {
+      // User cancelled or share failed — fall through to download
+    }
+  }
+
+  // Fallback: download the image
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+  return 'downloaded'
+}
+
+/**
+ * Convert a canvas to blob (promisified).
+ */
+export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+}
+
+/** Cached logo for share cards */
+let _logoCache: HTMLImageElement | null = null
+
+/**
+ * Load the app logo image for use in share card canvases.
+ * Caches after first load.
+ */
+export function loadLogo(): Promise<HTMLImageElement | null> {
+  if (_logoCache) return Promise.resolve(_logoCache)
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => { _logoCache = img; resolve(img) }
+    img.onerror = () => resolve(null)
+    img.src = '/logo-ghd.jpg'
+  })
+}

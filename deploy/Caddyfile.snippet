@@ -1,0 +1,26 @@
+# GHD Spor — spor.globalhukukcular.com
+# Bu bloğu /root/Gakademi/deploy/Caddyfile sonuna ekleyip:
+#   docker exec gakademi-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+spor.globalhukukcular.com {
+	encode zstd gzip
+
+	# e-Devlet belgesi yüklemesi (10 MB) + multipart payı
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self), camera=(), microphone=(self)"
+		-Server
+	}
+
+	# GHD: upstream marketing/blog statik kabukları kapalı; tek public yüzey landing.
+	@oldpublic path /blog /blog/* /en /en/* /es /es/* /features /features/* /download /descargar
+	redir @oldpublic / 302
+
+	reverse_proxy sporgla-app:8090
+}

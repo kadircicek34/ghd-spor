@@ -1,0 +1,102 @@
+/**
+ * Aterrizaje web de una invitación a batalla (#356).
+ *
+ * El enlace que se comparte es `https://spor.globalhukukcular.com/battle-invite/<token>`, así que
+ * puede abrirse en cualquier sitio: en Android/iOS con la app instalada lo captura el
+ * app link y esta página no llega a verse. Existe para el resto de los casos —
+ * escritorio, o el móvil de alguien que aún no tiene la app — donde sin ella el enlace
+ * sería un 404 y la invitación moriría ahí.
+ *
+ * Las batallas se juegan en la app nativa (el MVP es solo móvil), así que aquí solo se
+ * muestra a qué te han invitado y se empuja a abrirla o instalarla. Igual que en la app,
+ * los datos son solo recuentos: nunca quién está dentro.
+ */
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { Swords } from 'lucide-react'
+
+import { previewBattleInvite } from '@calistenia/core/lib/battleApi'
+import { battleExerciseLabel, battleTitle } from '@calistenia/core/data/battle-presets'
+import type { BattleInvitePreview } from '@calistenia/core/types/battle'
+
+export default function BattleInviteLandingPage() {
+  const { token } = useParams<{ token: string }>()
+  const { t, i18n } = useTranslation()
+  const [preview, setPreview] = useState<BattleInvitePreview | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    previewBattleInvite(token)
+      .then(result => { if (!cancelled) setPreview(result) })
+      .catch(() => { if (!cancelled) setFailed(true) })
+    return () => { cancelled = true }
+  }, [token])
+
+  const unavailable = failed || (preview && !preview.ok)
+
+  // Título y nombres vienen congelados en la batalla (#882); sin título (batalla antigua
+  // sin preset conocido) no se enseña ninguno y queda el «Te han retado» de siempre.
+  const battle = preview?.ok ? preview.battle : null
+  const config = battle
+    ? { workout_template_id: battle.workout_template_id, title: battle.title, exercise_names: battle.exercise_names }
+    : null
+  const title = battleTitle(config, i18n.language)
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="flex w-full max-w-sm flex-col items-center gap-5 text-center">
+        <Swords className="size-8 text-lime" />
+        <p className="font-mono text-[10px] uppercase tracking-[3px] text-muted-foreground">
+          {t('battle.kicker')}
+        </p>
+
+        {!preview && !failed && (
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+        )}
+
+        {preview?.ok && preview.battle && (
+          <>
+            <h1 className="font-bebas text-4xl leading-none text-foreground">
+              {t('battle.invitedTitle')}
+            </h1>
+            {title && (
+              <p className="font-mono text-[11px] uppercase tracking-[2px] text-foreground">{title}</p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {preview.battle.rounds} {t('battle.rounds')} · {preview.battle.exercise_count}{' '}
+              {t('battle.exercises')}
+            </p>
+            {config && preview.battle.exercise_ids.length > 0 && (
+              <ul className="flex flex-col gap-1 text-sm text-foreground">
+                {preview.battle.exercise_ids.map(id => (
+                  <li key={id}>{battleExerciseLabel(config, id, i18n.language)}</li>
+                ))}
+              </ul>
+            )}
+            <p className="font-mono text-[11px] uppercase tracking-[2px] text-lime">
+              {preview.battle.participant_count}{' '}
+              {preview.battle.participant_count === 1
+                ? t('battle.participantOne')
+                : t('battle.participants')}
+            </p>
+            <p className="text-sm text-muted-foreground">{t('battle.openInApp')}</p>
+          </>
+        )}
+
+        {unavailable && (
+          <>
+            <h1 className="font-bebas text-3xl leading-none text-muted-foreground">
+              {preview?.reason === 'expired'
+                ? t('battle.inviteExpired')
+                : t('battle.inviteUnavailable')}
+            </h1>
+            <p className="text-sm text-muted-foreground">{t('battle.inviteUnavailableHint')}</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

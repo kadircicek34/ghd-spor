@@ -1,0 +1,63 @@
+# Local development / smoke-test of the production image
+#
+# Usage:
+#   docker compose up --build
+#   docker compose down -v
+#
+# App: http://localhost:8090
+# PocketBase admin: http://localhost:8090/_/
+# AI API: http://localhost:3001/api/health
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_AI_API_URL: http://localhost:3001
+        VITE_VAPID_PUBLIC_KEY: ${VITE_VAPID_PUBLIC_KEY:-}
+    container_name: calistenia-app
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      # PB hooks need these to call the AI API for push notifications
+      - AI_API_URL=http://ai-api:3001
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
+    volumes:
+      - ./pb_data_local:/app/pb_data
+
+  ai-api:
+    build:
+      context: .
+      dockerfile: mcp-server/Dockerfile
+    container_name: calistenia-ai-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      # At least one provider key is required
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # PocketBase URL (internal Docker network)
+      - POCKETBASE_URL=http://app:8090
+      # Optional: set preferred provider and model overrides
+      - DEFAULT_AI_PROVIDER=${DEFAULT_AI_PROVIDER:-}
+      - DEFAULT_MODEL_FREE=${DEFAULT_MODEL_FREE:-}
+      - DEFAULT_MODEL_PRO=${DEFAULT_MODEL_PRO:-}
+      # Optional: rate limit tuning
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-10}
+      # MCP OAuth public origin — must be this server's public URL so OAuth
+      # discovery metadata (issuer / authorize / token / protected-resource)
+      # resolves for remote clients like Claude Desktop Connectors.
+      # Set the real value in Dokploy env vars (prod) or .env (local).
+      # Falls back to localhost for a bare `docker compose up`.
+      - SERVER_URL=${SERVER_URL:-http://localhost:3001}
+      # Push notifications (VAPID + internal auth)
+      - VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
+    depends_on:
+      - app

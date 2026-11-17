@@ -1,0 +1,683 @@
+/* ==========================================================================
+   GHD Spor — base visual compartida
+   Obsidiana, bronce y oro. Todo el CSS está prefijado con `ghd-` para no
+   interferir con el tema de la aplicación existente.
+   ========================================================================== */
+
+.ghd-page,
+.ghd-auth,
+.ghd-status,
+.ghd-admin {
+  --ghd-obsidian: #080806;
+  --ghd-obsidian-2: #0b0b08;
+  --ghd-coal: #12110d;
+  --ghd-coal-2: #17150f;
+  --ghd-bronze: #a87f45;
+  --ghd-gold: #c9a227;
+  --ghd-gold-bright: #d4af37;
+  --ghd-champagne: #f2e7cf;
+  --ghd-cream: #f7f2e7;
+  --ghd-muted: #c9bfa9;
+  --ghd-dim: #8f8777;
+  --ghd-line: rgba(201, 162, 39, 0.22);
+  --ghd-line-strong: rgba(212, 175, 55, 0.46);
+  --ghd-error: #e06a5a;
+  --ghd-success: #7fae8b;
+  --ghd-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --ghd-body: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+
+  color: var(--ghd-champagne);
+  font-family: var(--ghd-body);
+}
+
+.ghd-page *,
+.ghd-auth *,
+.ghd-status *,
+.ghd-admin *,
+.ghd-page *::before,
+.ghd-auth *::before,
+.ghd-status *::before,
+.ghd-admin *::before,
+.ghd-page *::after,
+.ghd-auth *::after,
+.ghd-status *::after,
+.ghd-admin *::after {
+  box-sizing: border-box;
+}
+
+.ghd-page {
+  min-height: 100vh;
+  overflow-x: clip;
+  background:
+    radial-gradient(ellipse 60% 44% at 82% 2%, rgba(201, 162, 39, 0.1), transparent 68%),
+    radial-gradient(ellipse 46% 34% at 6% 34%, rgba(168, 127, 69, 0.06), transparent 72%),
+    var(--ghd-obsidian);
+}
+
+.ghd-page :focus-visible,
+.ghd-auth :focus-visible,
+.ghd-status :focus-visible,
+.ghd-admin :focus-visible {
+  outline: 2px solid var(--ghd-gold-bright);
+  outline-offset: 3px;
+}
+
+.ghd-page a,
+.ghd-auth a,
+.ghd-status a,
+.ghd-admin a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ghd-container {
+  width: min(1180px, calc(100% - 56px));
+  margin-inline: auto;
+}
+
+.ghd-container--narrow {
+  width: min(880px, calc(100% - 56px));
+  margin-inline: auto;
+}
+
+.ghd-display {
+  margin: 0;
+  font-family: var(--ghd-display);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  color: var(--ghd-cream);
+}
+
+.ghd-eyebrow {
+  margin: 0;
+  color: var(--ghd-gold-bright);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.ghd-muted-text {
+  color: var(--ghd-muted);
+}
+
+.ghd-gold-text {
+  color: var(--ghd-gold-bright);
+}
+
+/* ── Marca ───────────────────────────────────────────────────────────────── */
+
+.ghd-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: var(--ghd-cream);
+}
+
+.ghd-brand__mark {
+  display: block;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  padding: 2px;
+  border-radius: 50%;
+  background: conic-gradient(from 210deg, #8d682f, #e3c56b, #a87f45, #f0dda3, #8d682f);
+  box-shadow: 0 0 0 1px rgba(8, 8, 6, 0.9), 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.ghd-brand__mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ghd-brand__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ghd-brand__name {
+  color: var(--ghd-cream);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.ghd-brand__sub {
+  overflow: hidden;
+  color: var(--ghd-dim);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Botones ─────────────────────────────────────────────────────────────── */
+
+.ghd-btn {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--ghd-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+.ghd-btn svg {
+  flex: 0 0 auto;
+  transition: transform 220ms ease;
+}
+
+.ghd-btn:hover svg.ghd-btn__arrow {
+  transform: translateX(3px);
+}
+
+.ghd-btn--gold {
+  border-color: rgba(247, 226, 160, 0.45);
+  background: linear-gradient(135deg, #e2c264 0%, #c9a227 48%, #a87f45 100%);
+  color: #17130a;
+  box-shadow: 0 12px 34px rgba(201, 162, 39, 0.16);
+}
+
+/* Los enlaces heredan el color del contenedor; los botones deben conservar el
+   suyo propio aunque sean <a>. */
+.ghd-page a.ghd-btn--gold,
+.ghd-auth a.ghd-btn--gold,
+.ghd-status a.ghd-btn--gold,
+.ghd-admin a.ghd-btn--gold {
+  color: #17130a;
+}
+
+.ghd-page a.ghd-btn--navy,
+.ghd-auth a.ghd-btn--navy,
+.ghd-status a.ghd-btn--navy,
+.ghd-admin a.ghd-btn--navy {
+  color: #fbf9f4;
+}
+
+.ghd-btn--gold:hover {
+  box-shadow: 0 16px 42px rgba(201, 162, 39, 0.28);
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.ghd-btn--ghost {
+  border-color: var(--ghd-line-strong);
+  background: transparent;
+  color: var(--ghd-champagne);
+}
+
+.ghd-btn--ghost:hover {
+  border-color: var(--ghd-gold-bright);
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--ghd-cream);
+}
+
+.ghd-btn--ink {
+  border-color: rgba(8, 8, 6, 0.6);
+  background: #0b0b08;
+  color: var(--ghd-cream);
+}
+
+.ghd-btn--ink:hover {
+  background: #17130a;
+  box-shadow: 0 14px 34px rgba(8, 8, 6, 0.35);
+  transform: translateY(-1px);
+}
+
+.ghd-btn--navy {
+  border-color: #0f1e3d;
+  background: #0f1e3d;
+  color: #fbf9f4;
+  box-shadow: 0 12px 28px rgba(15, 30, 61, 0.16);
+}
+
+.ghd-btn--navy:hover {
+  border-color: #16294f;
+  background: #16294f;
+  box-shadow: 0 16px 36px rgba(15, 30, 61, 0.24);
+  transform: translateY(-1px);
+}
+
+.ghd-btn--soft {
+  border-color: var(--ghd-line);
+  background: rgba(201, 162, 39, 0.06);
+  color: var(--ghd-champagne);
+}
+
+.ghd-btn--soft:hover {
+  border-color: var(--ghd-line-strong);
+  background: rgba(201, 162, 39, 0.11);
+}
+
+.ghd-btn--danger {
+  border-color: rgba(224, 106, 90, 0.4);
+  background: rgba(224, 106, 90, 0.08);
+  color: #f2a99f;
+}
+
+.ghd-btn--danger:hover {
+  border-color: var(--ghd-error);
+  background: rgba(224, 106, 90, 0.15);
+}
+
+.ghd-btn--sm {
+  min-height: 40px;
+  padding: 0.55rem 1rem;
+  font-size: 11.5px;
+}
+
+.ghd-btn--block {
+  width: 100%;
+}
+
+.ghd-btn:disabled,
+.ghd-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: none;
+  transform: none;
+}
+
+.ghd-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ghd-gold-bright);
+  font-weight: 600;
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+
+.ghd-link:hover {
+  color: var(--ghd-cream);
+  text-decoration: underline;
+}
+
+/* ── Formularios ─────────────────────────────────────────────────────────── */
+
+.ghd-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
+.ghd-field__label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  color: var(--ghd-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.ghd-field__optional {
+  color: var(--ghd-dim);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.ghd-input,
+.ghd-select,
+.ghd-textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid rgba(201, 162, 39, 0.2);
+  border-radius: 2px;
+  background: #0c0b08;
+  color: var(--ghd-champagne);
+  font-family: var(--ghd-body);
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 0.72rem 0.95rem;
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.ghd-input::placeholder,
+.ghd-textarea::placeholder {
+  color: #6f6757;
+  opacity: 1;
+}
+
+.ghd-input:hover,
+.ghd-select:hover,
+.ghd-textarea:hover {
+  border-color: rgba(201, 162, 39, 0.34);
+}
+
+.ghd-input:focus,
+.ghd-select:focus,
+.ghd-textarea:focus {
+  border-color: var(--ghd-gold-bright);
+  outline: none;
+  background: #0f0d09;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.14);
+}
+
+.ghd-input[aria-invalid='true'],
+.ghd-select[aria-invalid='true'],
+.ghd-textarea[aria-invalid='true'],
+.ghd-input.is-invalid,
+.ghd-select.is-invalid,
+.ghd-textarea.is-invalid {
+  border-color: rgba(224, 106, 90, 0.7);
+}
+
+.ghd-input[aria-invalid='true']:focus,
+.ghd-select[aria-invalid='true']:focus,
+.ghd-textarea[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgba(224, 106, 90, 0.14);
+}
+
+.ghd-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.9rem center;
+  background-repeat: no-repeat;
+  padding-right: 2.4rem;
+}
+
+.ghd-select option {
+  background: #12110d;
+  color: var(--ghd-champagne);
+}
+
+.ghd-textarea {
+  min-height: 106px;
+  resize: vertical;
+}
+
+.ghd-error-text {
+  margin: 0;
+  color: var(--ghd-error);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.ghd-field__hint {
+  margin: 0;
+  color: var(--ghd-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ghd-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: var(--ghd-muted);
+  cursor: pointer;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.ghd-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 1px 0 0;
+  accent-color: var(--ghd-gold);
+  cursor: pointer;
+}
+
+.ghd-check a {
+  color: var(--ghd-gold-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ghd-check a:hover {
+  color: var(--ghd-cream);
+}
+
+/* ── Subida de fichero ───────────────────────────────────────────────────── */
+
+.ghd-file {
+  position: relative;
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px dashed rgba(201, 162, 39, 0.35);
+  border-radius: 4px;
+  background: rgba(201, 162, 39, 0.035);
+  color: #a99f8c;
+  cursor: pointer;
+  padding: 0.9rem 1rem;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.ghd-file:hover,
+.ghd-file:focus-within {
+  border-color: var(--ghd-gold-bright);
+  background: rgba(201, 162, 39, 0.07);
+}
+
+.ghd-file.is-invalid {
+  border-color: rgba(224, 106, 90, 0.65);
+}
+
+.ghd-file.has-file {
+  border-style: solid;
+  border-color: rgba(201, 162, 39, 0.3);
+}
+
+.ghd-file > svg {
+  flex: 0 0 auto;
+  color: var(--ghd-gold);
+}
+
+.ghd-file__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ghd-file__meta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ghd-file__meta strong {
+  overflow: hidden;
+  color: var(--ghd-champagne);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghd-file__meta small {
+  color: #8f8777;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.ghd-file__remove {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(224, 106, 90, 0.3);
+  border-radius: 50%;
+  color: #d99a91;
+  cursor: pointer;
+}
+
+.ghd-file__remove:hover {
+  border-color: var(--ghd-error);
+  background: rgba(224, 106, 90, 0.12);
+}
+
+/* ── Avisos ──────────────────────────────────────────────────────────────── */
+
+.ghd-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  border: 1px solid var(--ghd-line);
+  border-radius: 2px;
+  background: rgba(201, 162, 39, 0.055);
+  color: var(--ghd-champagne);
+  font-size: 12.5px;
+  line-height: 1.55;
+  padding: 0.8rem 0.95rem;
+}
+
+.ghd-alert svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.ghd-alert--error {
+  border-color: rgba(224, 106, 90, 0.35);
+  background: rgba(224, 106, 90, 0.075);
+  color: #f3c2bb;
+}
+
+.ghd-alert--success {
+  border-color: rgba(127, 174, 139, 0.38);
+  background: rgba(127, 174, 139, 0.075);
+  color: #c3deca;
+}
+
+.ghd-alert--info {
+  border-color: rgba(201, 162, 39, 0.3);
+  background: rgba(201, 162, 39, 0.06);
+}
+
+.ghd-spinner {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ghd-spin 700ms linear infinite;
+}
+
+.ghd-btn--gold .ghd-spinner {
+  border-color: rgba(23, 19, 10, 0.25);
+  border-top-color: #17130a;
+}
+
+/* ── Reveal ──────────────────────────────────────────────────────────────── */
+
+.ghd-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 760ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.ghd-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Animaciones comunes ─────────────────────────────────────────────────── */
+
+@keyframes ghd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ghd-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes ghd-halo {
+  0%, 100% { opacity: 0.55; transform: scale(0.98); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+}
+
+@keyframes ghd-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghd-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .ghd-float,
+  .ghd-halo {
+    animation: none !important;
+  }
+}
+
+/* ── Responsive base ─────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .ghd-container,
+  .ghd-container--narrow {
+    width: min(100% - 36px, 1180px);
+  }
+
+  .ghd-brand__mark {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ghd-brand__name {
+    font-size: 13px;
+  }
+
+  .ghd-brand__sub {
+    font-size: 8px;
+  }
+
+  .ghd-btn {
+    min-height: 46px;
+    padding: 0.75rem 1.15rem;
+    font-size: 12.5px;
+  }
+}

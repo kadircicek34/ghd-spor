@@ -1,0 +1,325 @@
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { pb, isPocketBaseAvailable } from '../lib/pocketbase'
+import { joinChallenge } from '../lib/challenge-join'
+import { CANONICAL_ANALYTICS_EVENTS, op, trackCanonicalEvent } from '../lib/analytics'
+import { todayStr } from '../lib/dateUtils'
+import { qk } from '../lib/query-keys'
+import {
+  findExistingPresetChallenge,
+  getBeginnerChallengePreset,
+  getPresetDateRange,
+  getPresetDescription,
+  getPresetTitle,
+  type PresetParticipantRecord,
+} from '../lib/challenge-presets'
+import type { Challenge, ChallengeMetric, ChallengeStatus } from '../types'
+
+export interface ChallengeWithMeta extends Challenge {
+  participantCount: number
+}
+
+interface CreateChallengeData {
+  title: string
+  metric: ChallengeMetric
+  custom_metric?: string
+  exercise_slug?: string
+  description?: string
+  goal?: number
+  starts_at: string
+  ends_at: string
+  invitedUserIds: string[]
+}
+
+interface ChallengesQueryResult {
+  active: ChallengeWithMeta[]
+  past: ChallengeWithMeta[]
+}
+
+export interface PresetJoinResult {
+  challengeId: string
+  alreadyJoined: boolean
+  startsAt: string
+  endsAt: string
+}
+
+async function findUserPresetChallenge(userId: string, presetId: string) {
+  const records = await pb.collection('challenge_participants').getFullList({
+    filter: pb.filter('user = {:uid}', { uid: userId }),
+    expand: 'challenge',
+    $autoCancel: false,
+  })
+  return findExistingPresetChallenge(records as PresetParticipantRecord[], presetId)
+}
+
+async function findOwnedPresetChallenge(userId: string, presetId: string) {
+  try {
+    return await pb.collection('challenges').getFirstListItem(
+      pb.filter('creator = {:uid} && preset_key = {:preset} && status = "active"', { uid: userId, preset: presetId }),
+      { $autoCancel: false },
+    ) as any
+  } catch {
+    return null
+  }
+}
+
+/** queryFn pura: lee participaciones, cuenta participantes y clasifica retos. */
+async function fetchChallenges(userId: string): Promise<ChallengesQueryResult> {
+  const available = await isPocketBaseAvailable()
+  if (!available) return { active: [], past: [] }
+
+  // Obtener todas las participaciones del usuario con el reto expandido
+  const participations = await pb.collection('challenge_participants').getFullList({
+    filter: pb.filter('user = {:uid}', { uid: userId }),
+    expand: 'challenge',
+    $autoCancel: false,
+  })
+
+  const today = todayStr()
+  const challengeMap = new Map<string, ChallengeWithMeta>()
+
+  for (const p of participations) {
+    const c = (p as any).expand?.challenge
+    if (!c) continue
+
+    // Clasificación local: el cierre real lo hace el cron `challenges_expiry` del
+    // servidor (#515), que puede tardar hasta ~36 h en escribir la fila porque
+    // espera a que el día haya terminado en todas las zonas horarias. Esto es lo
+    // que hace que el usuario vea el reto en "pasados" al instante, sin esperarlo
+    // — y ya no escribe nada: el cliente no toca `challenges` desde ningún efecto.
+    if (c.status === 'active' && c.ends_at < today) {
+      c.status = 'ended'
+    }
+
+    if (!challengeMap.has(c.id)) {
+      challengeMap.set(c.id, {
+        id: c.id,
+        creator: c.creator,
+        title: c.title,
+        metric: c.metric as ChallengeMetric,
+        custom_metric: c.custom_metric || '',
+        exercise_slug: c.exercise_slug || '',
+        description: c.description || '',
+        goal: c.goal || 0,
+        starts_at: c.starts_at,
+        ends_at: c.ends_at,
+        status: c.status as ChallengeStatus,
+        preset_key: c.preset_key || undefined,
+        participantCount: 0,
+      })
+    }
+  }
+
+  // Contar participantes por reto (N+1 necesario para el recuento exacto)
+  const countPromises = Array.from(challengeMap.keys()).map(async (cid) => {
+    try {
+      const res = await pb.collection('challenge_participants').getList(1, 1, {
+        filter: pb.filter('challenge = {:cid}', { cid }),
+        $autoCancel: false,
+      })
+      const ch = challengeMap.get(cid)!
+      ch.participantCount = res.totalItems
+    } catch { /* ignorar errores individuales de conteo */ }
+  })
+  await Promise.all(countPromises)
+
+  const all = Array.from(challengeMap.values())
+  return {
+    active: all.filter(c => c.status === 'active').sort((a, b) => a.ends_at.localeCompare(b.ends_at)),
+    past: all.filter(c => c.status === 'ended').sort((a, b) => b.ends_at.localeCompare(a.ends_at)),
+  }
+}
+
+export function useChallenges(userId: string | null) {
+  const qc = useQueryClient()
+
+  // ── Query principal ────────────────────────────────────────────────────────
+  const { data, isLoading } = useQuery({
+    queryKey: qk.challenges(userId),
+    enabled: !!userId,
+    queryFn: () => fetchChallenges(userId!),
+    staleTime: 30_000,
+    // Retorno vacío mientras no hay datos
+    placeholderData: { active: [], past: [] },
+  })
+
+  const active = data?.active ?? []
+  const past = data?.past ?? []
+
+  // ── Mutación: crear reto ───────────────────────────────────────────────────
+  const createMutation = useMutation({
+    mutationFn: async (createData: CreateChallengeData): Promise<string> => {
+      if (!userId) throw new Error('Usuario no autenticado')
+
+      const challenge = await pb.collection('challenges').create({
+        creator: userId,
+        title: createData.title,
+        metric: createData.metric,
+        custom_metric: createData.custom_metric || '',
+        exercise_slug: createData.exercise_slug || '',
+        description: createData.description || '',
+        goal: createData.goal || 0,
+        starts_at: createData.starts_at,
+        ends_at: createData.ends_at,
+        status: 'active',
+      })
+
+      // Añadir creador + usuarios invitados como participantes.
+      //
+      // `requestKey: null` por lo mismo que en useProgramEditor (issue #536):
+      // estas altas comparten ruta, así que sin el flag el SDK auto-cancelaba
+      // todas menos la última y el `.catch` de duplicados se tragaba el aborto
+      // en silencio — un reto creado con invitados se quedaba con un solo
+      // participante, y a veces sin el propio creador.
+      const allParticipants = [userId, ...createData.invitedUserIds]
+      await Promise.all(
+        allParticipants.map(uid =>
+          joinChallenge(challenge.id, uid).catch(() => {}) // ignorar duplicados
+        )
+      )
+
+      op.track('challenge_created', {
+        metric: createData.metric,
+        duration_days: Math.ceil(
+          (new Date(createData.ends_at).getTime() - new Date(createData.starts_at).getTime()) / 86400000
+        ),
+        participant_count: allParticipants.length,
+      })
+
+      return challenge.id
+    },
+    onSuccess: () => {
+      // Invalidar la lista para que aparezca el nuevo reto
+      qc.invalidateQueries({ queryKey: qk.challenges(userId) })
+    },
+    onError: (e) => {
+      console.warn('Create challenge error:', e)
+    },
+  })
+
+  // ── Mutación: unirse a un preset de principiante ─────────────────────────
+  const joinPresetMutation = useMutation({
+    mutationFn: async (presetId: string): Promise<PresetJoinResult> => {
+      if (!userId) throw new Error('Usuario no autenticado')
+
+      const preset = getBeginnerChallengePreset(presetId)
+      if (!preset || !preset.enabled) throw new Error('Preset no disponible')
+      const dates = getPresetDateRange(preset)
+
+      const existing = await findUserPresetChallenge(userId, preset.id)
+      if (existing) {
+        return {
+          challengeId: existing.id,
+          alreadyJoined: true,
+          startsAt: existing.starts_at || '',
+          endsAt: existing.ends_at || '',
+        }
+      }
+
+      // Repair a challenge created by a previous interrupted request before
+      // creating another record. The participant unique index makes this safe
+      // if another device repaired it first.
+      const owned = await findOwnedPresetChallenge(userId, preset.id)
+      if (owned) {
+        await joinChallenge(owned.id, userId)
+        return {
+          challengeId: owned.id,
+          alreadyJoined: true,
+          startsAt: owned.starts_at || dates.startsAt,
+          endsAt: owned.ends_at || dates.endsAt,
+        }
+      }
+
+      let challenge: any
+      try {
+        challenge = await pb.collection('challenges').create({
+          creator: userId,
+          title: getPresetTitle(preset),
+          metric: preset.metric,
+          // `total_exercise`/`exercise` puntúan un ejercicio concreto: sin el
+          // slug el detalle daría 0 para siempre (#345, Push-up Builder).
+          exercise_slug: preset.exerciseSlug ?? '',
+          description: getPresetDescription(preset),
+          goal: preset.goal,
+          starts_at: dates.startsAt,
+          ends_at: dates.endsAt,
+          status: 'active',
+          type: 'standard',
+          preset_key: preset.id,
+        })
+      } catch (error) {
+        // A second tap/device can win the unique creator+preset race. Re-read
+        // the participant list and turn that race into an idempotent result.
+        const raced = await findUserPresetChallenge(userId, preset.id) || await findOwnedPresetChallenge(userId, preset.id)
+        if (raced) {
+          await joinChallenge(raced.id, userId)
+          return {
+            challengeId: raced.id,
+            alreadyJoined: true,
+            startsAt: raced.starts_at || dates.startsAt,
+            endsAt: raced.ends_at || dates.endsAt,
+          }
+        }
+        throw error
+      }
+
+      try {
+        await joinChallenge(challenge.id, userId)
+      } catch (error) {
+        // Avoid leaving a user-owned orphan when the participant write fails.
+        await pb.collection('challenges').delete(challenge.id).catch(() => {})
+        throw error
+      }
+
+      trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.challengeJoined, {
+        surface: 'challenge_preset_catalog',
+        source: preset.id,
+        challenge_id: challenge.id,
+        participant_count: 1,
+        result: 'joined',
+      })
+
+      return {
+        challengeId: challenge.id,
+        alreadyJoined: false,
+        startsAt: dates.startsAt,
+        endsAt: dates.endsAt,
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.challenges(userId) })
+    },
+  })
+
+  // ── API pública (forma idéntica al hook original) ──────────────────────────
+  /** Equivale al `load` del hook original; permite refetch manual. */
+  const load = useCallback(() => {
+    qc.invalidateQueries({ queryKey: qk.challenges(userId) })
+  }, [qc, userId])
+
+  /** Crea un reto y devuelve su ID, o null en caso de error (API original). */
+  const createChallenge = useCallback(async (createData: CreateChallengeData): Promise<string | null> => {
+    try {
+      return await createMutation.mutateAsync(createData)
+    } catch {
+      return null
+    }
+  }, [createMutation])
+
+  /**
+   * Propaga el error a propósito: quien llama tiene que poder avisar al usuario.
+   * Devolver null en silencio convertía un fallo de unión en un botón mudo.
+   */
+  const joinPreset = useCallback(async (presetId: string): Promise<PresetJoinResult> => {
+    return await joinPresetMutation.mutateAsync(presetId)
+  }, [joinPresetMutation])
+
+  return {
+    active,
+    past,
+    loading: isLoading,
+    load,
+    createChallenge,
+    joinPreset,
+  }
+}

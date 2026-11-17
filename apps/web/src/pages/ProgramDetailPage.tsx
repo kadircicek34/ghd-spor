@@ -1,0 +1,991 @@
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { cn } from '../lib/utils'
+import { localDay, todayStr, diffDays } from '@calistenia/core/lib/dateUtils'
+import { isPocketBaseAvailable, getCurrentUser } from '@calistenia/core/lib/pocketbase'
+import { fetchProgramDetailRows, fetchProgramRecord, fetchProgramLastSessionDays, fetchRelatedPrograms } from '@calistenia/core/lib/programDetailQuery'
+import { pbExerciseEditUrl } from '../lib/pocketbase-admin'
+import { calculateWorkoutDuration, formatDuration } from '@calistenia/core/lib/duration'
+import { inferDifficulty, DIFFICULTY_COLORS } from '@calistenia/core/lib/difficulty'
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
+import { ConfirmDialog } from '../components/ui/confirm-dialog'
+import { PRIORITY_COLORS, CARDIO_ACTIVITY } from '@calistenia/core/lib/style-tokens'
+import type { ProgramMeta, Priority, CardioDayConfig, CardioActivityType } from '@calistenia/core/types'
+import type { ProgramProgress } from '@calistenia/core/lib/programProgress'
+import type { RecordModel } from 'pocketbase'
+import { ShareButton } from '../components/ShareButton'
+import ExerciseThumbnail from '../components/ExerciseThumbnail'
+import ProgramProgressBar from '../components/programs/ProgramProgressBar'
+import { ProgramCover } from '../components/programs/ProgramCover'
+import AutoProgressToggle from '../components/programs/AutoProgressToggle'
+import { shareProgram } from '../lib/share'
+import { ArrowLeftIcon, CopyIcon, CheckIcon, EditIcon } from '../components/icons/nav-icons'
+import { useTranslation } from 'react-i18next'
+import { localize } from '@calistenia/core/lib/i18n-db'
+import { resolveExerciseDisplayName } from '@calistenia/core/lib/exercise-resolver'
+import { loadCatalogIndex, getCatalogIndexSync } from '@calistenia/core/lib/catalogIndex'
+import { resolveExerciseId } from '@calistenia/core/lib/resolveExerciseId'
+import { inferTimerFromReps } from '@calistenia/core/lib/exercise-timer-inference'
+import { localizeReps } from '@calistenia/core/lib/localize-reps'
+import { authorDisplayName } from '@calistenia/core/lib/author-name'
+import { useProgramStats } from '@calistenia/core/hooks/useProgramStats'
+import { ProgramRemixCredit, ProgramFollowers } from '../components/programs/ProgramRemixCredit'
+import { CANONICAL_ANALYTICS_EVENTS, trackCanonicalEvent } from '@calistenia/core/lib/analytics'
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface ProgramPhase {
+  id: number
+  name: string
+  weeks: string
+  color: string
+  bg: string
+}
+
+interface ProgramWorkout {
+  phase: number
+  day: string
+  dayName: string
+  dayFocus: string
+  dayType?: string
+  title: string
+  exercises: ProgramExercise[]
+  cardioConfig?: CardioDayConfig
+}
+
+interface ProgramExercise {
+  id: string
+  name: string
+  sets: number | string
+  reps: string
+  rest: number
+  muscles: string
+  note: string
+  youtube: string
+  priority: 'high' | 'med' | 'low'
+  isTimer?: boolean
+  timerSeconds?: number
+  demoImages?: string[]
+  demoVideo?: string
+  pbRecordId?: string
+}
+
+/**
+ * Id con el que `/exercises/:id` sabe abrir la ficha, o `null` si no hay ninguno.
+ *
+ * `program_exercises.exercise_id` es o un id del catálogo o una CLAVE DE SLOT
+ * del programa («lun_1_9»), que sólo significa algo dentro de ese programa. La
+ * ficha de ejercicio busca por id exacto en el catálogo, así que enlazar una
+ * clave de slot llevaba a un «ejercicio no encontrado» (#690). Se enlaza el id
+ * ya resuelto —un seed slug («flexiones-clasicas») tampoco abre la ficha tal
+ * cual— y sólo cuando de verdad existe en el catálogo.
+ */
+function catalogLinkId(exerciseId: string): string | null {
+  const index = getCatalogIndexSync()
+  if (!index || !exerciseId) return null
+  const resolved = resolveExerciseId(exerciseId, index)
+  return index.ids.has(resolved) ? resolved : null
+}
+
+const PRIORITY_LABEL_KEY: Record<string, string> = {
+  high: 'priority.high',
+  med: 'priority.med',
+  low: 'priority.low',
+}
+
+// ── Day order ──────────────────────────────────────────────────────────────
+
+const DAY_ORDER = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom']
+
+/** `day` es el día local YYYY-MM-DD (hora de pared del usuario), no un instante. */
+function formatRelativeDate(day: string): { text: string; fresh: boolean } {
+  const days = Math.max(0, diffDays(todayStr(), day))
+  const fresh = days < 7
+  if (days === 0) return { text: 'hoy', fresh }
+  if (days === 1) return { text: 'ayer', fresh }
+  if (days < 7) return { text: `hace ${days} días`, fresh }
+  if (days < 30) return { text: `hace ${Math.floor(days / 7)} sem`, fresh }
+  return { text: `hace ${Math.floor(days / 30)} mes${Math.floor(days / 30) > 1 ? 'es' : ''}`, fresh }
+}
+
+// Map JS getDay() (0=Sun) to our day IDs
+const JS_DAY_TO_ID: Record<number, string> = {
+  0: 'dom', 1: 'lun', 2: 'mar', 3: 'mie', 4: 'jue', 5: 'vie', 6: 'sab',
+}
+const TODAY_DAY_ID = JS_DAY_TO_ID[localDay()]
+
+function ChevronIcon({ className, expanded }: { className?: string; expanded: boolean }) {
+  return (
+    <svg
+      className={cn(className, 'transition-transform duration-200', expanded && 'rotate-180')}
+      viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"
+    >
+      <polyline points="4,6 8,10 12,6" />
+    </svg>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────
+
+interface ProgramDetailPageProps {
+  programId: string
+  userId?: string
+  userRole?: import('@calistenia/core/types').UserRole
+  activeProgram?: ProgramMeta | null
+  /**
+   * Progreso dentro del programa ACTIVO (#616). Llega por prop y no por
+   * contexto porque esta página también se pinta en `/shared/:id`, fuera del
+   * `WorkoutProvider`.
+   */
+  programProgress?: ProgramProgress
+  onBack: () => void
+  onNavigateToProgram?: (programId: string) => void
+  onSelectProgram?: (programId: string) => Promise<boolean>
+  onDuplicateProgram?: (programId: string) => Promise<void>
+  onDeleteProgram?: (programId: string) => Promise<void>
+  onAbandonProgram?: (programId: string) => Promise<boolean>
+  onEditProgram?: (programId: string) => void
+  /** If true, show as shared view (for non-logged-in or add-to-mine) */
+  isSharedView?: boolean
+  onLogin?: () => void
+}
+
+export default function ProgramDetailPage({
+  programId,
+  userId,
+  userRole = 'user',
+  activeProgram,
+  programProgress,
+  onBack,
+  onNavigateToProgram,
+  onSelectProgram,
+  onDuplicateProgram,
+  onDeleteProgram,
+  onAbandonProgram,
+  onEditProgram,
+  isSharedView = false,
+  onLogin,
+}: ProgramDetailPageProps) {
+  const { t, i18n: i18nInstance } = useTranslation()
+  const locale = i18nInstance.language
+  const [program, setProgram] = useState<ProgramMeta | null>(null)
+  const [phases, setPhases] = useState<ProgramPhase[]>([])
+  const [workouts, setWorkouts] = useState<ProgramWorkout[]>([])
+  const [relatedPrograms, setRelatedPrograms] = useState<ProgramMeta[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedPhase, setSelectedPhase] = useState<string>('1')
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set())
+  const [lastSessions, setLastSessions] = useState<Record<string, string>>({})
+
+  const isActive = activeProgram?.id === programId
+  const isOwn = program?.created_by === userId
+  const currentUser = getCurrentUser()
+
+  // Cuánta gente sigue ESTE programa (#620). El array se memoiza porque es la
+  // clave de caché del hook: recrearlo en cada render lo dejaría refetcheando.
+  const statsIds = useMemo(() => (programId ? [programId] : []), [programId])
+  const { statsById } = useProgramStats(statsIds)
+  const followersCount = statsById[programId ?? '']?.followersCount
+  const isAdminOrEditor = currentUser?.role === 'admin' || currentUser?.role === 'editor'
+
+  // ── Fetch program data ─────────────────────────────────────────────────
+
+  const fetchProgram = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    const available = await isPocketBaseAvailable()
+    if (!available) {
+      setError(t('programDetail.cannotConnect'))
+      setLoading(false)
+      return
+    }
+
+    try {
+      // Fetch program
+      // El `expand` trae el crédito del remix (#620): de qué programa salió esta
+      // copia y quién lo escribió. Son dos saltos de relación que PocketBase
+      // resuelve en esta misma petición.
+      const progRecord = await fetchProgramRecord(programId)
+      const forkedFrom = (progRecord.expand as any)?.forked_from
+      const meta: ProgramMeta = {
+        id: progRecord.id,
+        name: localize(progRecord.name, locale),
+        description: localize(progRecord.description, locale),
+        duration_weeks: progRecord.duration_weeks,
+        created_by: progRecord.created_by || undefined,
+        forked_from: progRecord.forked_from || undefined,
+        // `localize` obligatorio: el nombre es un `json {es,en}` y pintarlo
+        // crudo en la frase daría «Basado en [object Object]».
+        forked_from_name: forkedFrom ? localize(forkedFrom.name, locale) || undefined : undefined,
+        forked_from_author: forkedFrom
+          ? authorDisplayName(forkedFrom.expand?.created_by) || undefined
+          : undefined,
+        // «Cómo seguir este programa» (#618). Se lee del registro crudo, que es
+        // de donde ya salían nombre y descripción; `localize` es obligatorio
+        // porque el campo es un `json` `{ es, en }` y pintarlo tal cual daría
+        // «[object Object]».
+        instructions: localize(progRecord.instructions, locale),
+        // Solo el nombre del fichero: la URL la monta `ProgramCover` con el
+        // tamaño que necesita cada sitio (banner o visor).
+        cover_image: progRecord.cover_image || undefined,
+        cover_focus: progRecord.cover_focus || undefined,
+      }
+      setProgram(meta)
+
+      // Fetch phases + exercises + day config. La consulta la comparte
+      // `fetchProgramDetail` de `usePrograms` (#474): era la misma, duplicada.
+      // De paso las fases dejan de ir en un viaje aparte antes de las otras dos.
+      const { phases: phaseItems, exercises: exerciseItems, dayConfigs: dayConfigItems } =
+        await fetchProgramDetailRows(programId)
+
+      // El resolutor de nombres es síncrono: sin el índice cargado dejaría
+      // pasar los slugs crudos («sphinx_pushup»). Si falla, se pinta tal cual.
+      await loadCatalogIndex().catch(() => null)
+
+      const builtPhases: ProgramPhase[] = phaseItems.map(p => ({
+        id: p.phase_number,
+        name: localize(p.name, locale),
+        weeks: p.weeks,
+        color: p.color,
+        bg: p.bg_color,
+      }))
+      setPhases(builtPhases)
+
+      if (builtPhases.length > 0) {
+        setSelectedPhase(String(builtPhases[0].id))
+      }
+
+      // Build workouts grouped by phase+day
+      const workoutMap: Record<string, ProgramWorkout> = {}
+
+      // First, add cardio days from day config
+      dayConfigItems.forEach((dc: RecordModel) => {
+        if (dc.day_type === 'cardio') {
+          const key = `p${dc.phase_number}_${dc.day_id}`
+          if (!workoutMap[key]) {
+            workoutMap[key] = {
+              phase: dc.phase_number,
+              day: dc.day_id,
+              dayName: localize(dc.day_name, locale),
+              dayFocus: localize(dc.day_focus, locale),
+              dayType: 'cardio',
+              title: localize(dc.day_focus, locale),
+              exercises: [],
+              cardioConfig: {
+                activityType: (dc.cardio_activity_type || 'running') as CardioActivityType,
+                targetDistanceKm: dc.cardio_target_distance_km || undefined,
+                targetDurationMin: dc.cardio_target_duration_min || undefined,
+              },
+            }
+          }
+        }
+      })
+
+      exerciseItems.forEach((r: RecordModel) => {
+        const key = `p${r.phase_number}_${r.day_id}`
+        // #690: filas sembradas con `is_timer: false` y la duración metida en
+        // el texto de `reps` («30-45 seg»). Aquí sólo cambia el «Timer: Ns» de
+        // la ficha, pero se deduce igual que en la sesión para que las dos
+        // pantallas cuenten lo mismo del mismo ejercicio.
+        const inferredTimer = r.is_timer ? null : inferTimerFromReps(r.reps)
+        if (!workoutMap[key]) {
+          workoutMap[key] = {
+            phase: r.phase_number,
+            day: r.day_id,
+            dayName: localize(r.day_name, locale),
+            dayFocus: localize(r.day_focus, locale),
+            dayType: r.day_type,
+            title: localize(r.workout_title, locale),
+            exercises: [],
+          }
+        }
+        workoutMap[key].exercises.push({
+          id: r.exercise_id,
+          // Cambia un slug de catálogo en `exercise_name` por el nombre
+          // localizado; el `id` sigue crudo (clave del historial de series).
+          name: resolveExerciseDisplayName(r.exercise_name, r.exercise_id, locale),
+          sets: r.sets,
+          reps: localizeReps(r.reps, locale),
+          rest: r.rest_seconds,
+          muscles: localize(r.muscles, locale),
+          note: localize(r.note, locale),
+          youtube: r.youtube,
+          priority: r.priority,
+          isTimer: r.is_timer || !!inferredTimer,
+          timerSeconds: inferredTimer ? (r.timer_seconds || inferredTimer.timerSeconds) : r.timer_seconds,
+          // Nombres de fichero crudos de PB, no URLs: se pintan vía `ExerciseThumbnail`
+          // / `MediaViewer`, que resuelven por `getExerciseMedia()` (#608).
+          demoImages: r.demo_images || [],
+          demoVideo: r.demo_video || '',
+          pbRecordId: r.id,
+        })
+      })
+      setWorkouts(Object.values(workoutMap))
+
+      // Fetch last session per workout day (for history context)
+      if (userId) {
+        try {
+          // Último día entrenado por día de programa (core: mismo filtro que useProgress).
+          const sessionMap = await fetchProgramLastSessionDays(userId, programId)
+          setLastSessions(sessionMap)
+        } catch {
+          // Not critical
+        }
+      }
+
+      // Fetch related programs (others in catalog)
+      // Solo públicos (#603): esto es una recomendación hacia fuera, no la lista
+      // del autor, así que aquí no entran los borradores propios.
+      try {
+        const relatedItems = await fetchRelatedPrograms(programId)
+        setRelatedPrograms(relatedItems.map(p => ({
+          id: p.id,
+          name: localize(p.name, locale),
+          description: localize(p.description, locale),
+          duration_weeks: p.duration_weeks,
+          created_by: p.created_by || undefined,
+        })))
+      } catch {
+        // Not critical
+      }
+    } catch (e) {
+      if ((e as { code?: number } | null)?.code === 0) return // auto-cancelled, ignore
+      console.error('ProgramDetailPage: fetch error', e)
+      setError(t('programDetail.loadError'))
+    } finally {
+      setLoading(false)
+    }
+    // `userId` es prop y decide si se piden las últimas sesiones por día: cuando
+    // el auth se restaura después de montar, sin él en las deps `fetchProgram`
+    // no se recreaba y el historial por día no llegaba nunca. (#484)
+  }, [programId, locale, userId, t])
+
+  useEffect(() => {
+    fetchProgram()
+  }, [fetchProgram])
+
+  // #636 §4: `program_selected` no tenía denominador — se sabía cuánta gente
+  // elige un programa, pero no cuánta lo mira y pasa de él.
+  useEffect(() => {
+    if (!program) return
+    trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.programViewed, {
+      surface: 'program', source: isSharedView ? 'shared_link' : 'program_detail',
+      program_id: programId,
+      is_active: isActive,
+      is_own: isOwn,
+      phase_count: phases.length,
+      workout_count: workouts.length,
+    })
+    // Solo por programa: recargar la ficha tras inscribirse no es una vista nueva.
+  }, [programId, !!program]) // eslint-disable-line react-hooks/exhaustive-deps -- una vista por programa
+
+  // ── Actions ────────────────────────────────────────────────────────────
+
+  const handleSelectProgram = async () => {
+    if (!onSelectProgram) return
+    setActionLoading('select')
+    try {
+      await onSelectProgram(programId)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDuplicate = async () => {
+    if (!onDuplicateProgram) return
+    setActionLoading('duplicate')
+    try {
+      await onDuplicateProgram(programId)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleAbandon = async () => {
+    if (!onAbandonProgram) return
+    setActionLoading('abandon')
+    try {
+      await onAbandonProgram(programId)
+    } finally {
+      setActionLoading(null)
+      setShowAbandonConfirm(false)
+    }
+  }
+
+  // ── Phase workouts ─────────────────────────────────────────────────────
+
+  const phaseNum = parseInt(selectedPhase)
+  const phaseWorkouts = useMemo(() =>
+    workouts
+      .filter(w => w.phase === phaseNum)
+      .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)),
+    [workouts, phaseNum]
+  )
+
+  // Auto-expand first day when phase changes
+  useEffect(() => {
+    if (phaseWorkouts.length > 0) {
+      setExpandedDays(new Set([`${phaseWorkouts[0].phase}_${phaseWorkouts[0].day}`]))
+    }
+  }, [phaseNum, phaseWorkouts.length]) // eslint-disable-line react-hooks/exhaustive-deps -- auto-expandir solo al cambiar de fase; con `phaseWorkouts` reabriría el día al plegarlo
+
+  const toggleDay = useCallback((key: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
+
+  // Total exercise count
+  const totalExerciseCount = useMemo(
+    () => workouts.reduce((sum, w) => sum + w.exercises.length, 0),
+    [workouts]
+  )
+
+  // Difficulty level
+  const allExercises = useMemo(() => workouts.flatMap(w => w.exercises), [workouts])
+  const difficulty = useMemo(() => inferDifficulty(allExercises), [allExercises])
+  const diffStyle = DIFFICULTY_COLORS[difficulty]
+
+  // Total estimated duration (sum of all workout durations)
+  const totalDurationMinutes = useMemo(() => {
+    return workouts.reduce((sum, w) => sum + calculateWorkoutDuration(w.exercises), 0)
+  }, [workouts])
+
+  // Per-workout duration for phase workouts
+  const workoutDurations = useMemo(() => {
+    const map: Record<string, number> = {}
+    phaseWorkouts.forEach(w => {
+      map[`${w.phase}_${w.day}`] = calculateWorkoutDuration(w.exercises)
+    })
+    return map
+  }, [phaseWorkouts])
+
+  // ── Render ─────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12" role="status" aria-busy="true" aria-label={t('common.loading')}>
+        <div className="animate-pulse space-y-6">
+          <div className="h-6 bg-muted rounded w-24" />
+          <div className="h-14 bg-muted rounded w-2/3" />
+          <div className="h-4 bg-muted rounded w-1/2" />
+          <div className="flex gap-3">
+            <div className="h-10 bg-muted rounded w-40" />
+            <div className="h-10 bg-muted rounded w-32" />
+          </div>
+          <div className="h-[1px] bg-muted" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-48 bg-muted rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !program) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+        <button onClick={onBack} aria-label={t('programDetail.backToPrograms')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
+          <ArrowLeftIcon className="size-4" />
+          <span className="font-mono text-[11px] tracking-widest uppercase">{t('programDetail.back')}</span>
+        </button>
+        <div className="text-center py-20">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center motion-safe:animate-scale-in">
+            <svg className="size-8 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </div>
+          <p className="text-muted-foreground text-sm">{error || t('programDetail.notFound')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-12">
+
+      {/* Back button */}
+      <button onClick={onBack} aria-label={t('programDetail.backToPrograms')} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 -ml-1">
+        <ArrowLeftIcon className="size-4" />
+        <span className="font-mono text-[11px] tracking-widest uppercase">{t('programDetail.backToPrograms')}</span>
+      </button>
+
+      <ProgramCover program={program} />
+
+      {/* Hero section */}
+      <div className="mb-10">
+        <div className="text-[11px] text-muted-foreground tracking-[0.3em] mb-2 uppercase font-mono motion-safe:animate-fade-in">
+          {isSharedView ? t('programDetail.sharedProgram') : t('programDetail.programDetail')}
+        </div>
+        <h1 className="font-bebas text-4xl md:text-6xl leading-none mb-4 tracking-wide motion-safe:animate-fade-in" style={{ animationDelay: '50ms', animationFillMode: 'both' }}>{program.name}</h1>
+        {totalExerciseCount <= 1 && (
+          <div className="mb-6 rounded-lg border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-sm text-amber-500 motion-safe:animate-fade-in" style={{ animationDelay: '75ms', animationFillMode: 'both' }}>
+            {t('programs.contentComingSoon')}
+          </div>
+        )}
+        {program.description && (
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl mb-6 motion-safe:animate-fade-in" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>{program.description}</p>
+        )}
+
+        {/* Crédito del remix y prueba social (#620). Las dos piezas se callan
+            solas cuando no hay dato, así que el bloque desaparece entero en un
+            programa original que nadie sigue todavía. */}
+        {/* `!!`: con 0 seguidores `a || 0` vale 0 y React pinta un «0» suelto. */}
+        {(!!program.forked_from_name || !!followersCount) && (
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-1.5 max-w-2xl mb-6 motion-safe:animate-fade-in"
+            style={{ animationDelay: '110ms', animationFillMode: 'both' }}
+          >
+            <ProgramRemixCredit program={program} />
+            <ProgramFollowers count={followersCount} />
+          </div>
+        )}
+
+        {/* «Cómo seguir este programa» (#618): las notas del autor sobre cómo
+            llevarlo. Van aparte de la descripción porque esa es la frase corta
+            que se pinta en la tarjeta del catálogo. */}
+        {program.instructions?.trim() && (
+          <section
+            className="max-w-2xl mb-6 rounded-lg border border-border bg-card/40 px-4 py-3.5 motion-safe:animate-fade-in"
+            style={{ animationDelay: '115ms', animationFillMode: 'both' }}
+          >
+            <h2 className="font-mono text-[10px] uppercase tracking-[2px] text-muted-foreground mb-2">
+              {t('programDetail.howToFollow')}
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
+              {program.instructions}
+            </p>
+          </section>
+        )}
+
+        {/* Progreso: solo del programa en el que el usuario está inscrito (#616). */}
+        {programProgress && activeProgram?.id === programId && (
+          <div className="max-w-md mb-6 motion-safe:animate-fade-in" style={{ animationDelay: '125ms', animationFillMode: 'both' }}>
+            <ProgramProgressBar progress={programProgress} />
+          </div>
+        )}
+
+        {/* Opt-in de la progresión automática (#617). Va bajo la misma condición
+            que el progreso —solo el programa en el que uno está inscrito—, y
+            además el componente se calla si no hay inscripción: eso lo protege
+            en la vista pública `/shared/:id`, que se pinta sin WorkoutProvider. */}
+        {activeProgram?.id === programId && <AutoProgressToggle />}
+
+        {/* Meta stats */}
+        <div className="flex items-center gap-4 flex-wrap mb-6 motion-safe:animate-fade-in" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
+          {program.duration_weeks > 0 && (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-lime font-bebas text-xl">{program.duration_weeks}</span>
+                <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">{t('programDetail.weeks')}</span>
+              </div>
+              <div className="w-px h-5 bg-muted" />
+            </>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="text-lime font-bebas text-xl">{phases.length}</span>
+            <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">{t('programDetail.phases', { count: phases.length })}</span>
+          </div>
+          <div className="w-px h-5 bg-muted" />
+          <div className="flex items-center gap-2">
+            <span className="text-lime font-bebas text-xl">{totalExerciseCount}</span>
+            <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">{t('programDetail.exercises')}</span>
+          </div>
+          {totalDurationMinutes > 0 && (
+            <>
+              <div className="w-px h-5 bg-muted" />
+              <div className="flex items-center gap-2">
+                <span className="text-lime font-bebas text-xl">{formatDuration(totalDurationMinutes)}</span>
+                <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">total est.</span>
+              </div>
+            </>
+          )}
+          <div className="w-px h-5 bg-muted" />
+          <Badge
+            variant="outline"
+            className={cn(
+              'text-[9px] px-2.5 py-0.5 font-mono tracking-widest border',
+              diffStyle.text, diffStyle.bg, diffStyle.border
+            )}
+          >
+            {difficulty.toUpperCase()}
+          </Badge>
+          {isOwn && (
+            <>
+              <div className="w-px h-5 bg-muted" />
+              <span className="text-[10px] font-mono tracking-widest text-sky-400/70 uppercase">{t('programDetail.createdByYou')}</span>
+            </>
+          )}
+          {isActive && (
+            <>
+              <div className="w-px h-5 bg-muted" />
+              <span className="text-[9px] font-mono tracking-widest text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full uppercase">{t('programDetail.active')}</span>
+            </>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-3 flex-wrap motion-safe:animate-fade-in" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+          {isSharedView && !userId ? (
+            <Button
+              variant="limeSolid"
+              onClick={onLogin}
+              className="active:scale-[0.98] font-bebas text-lg tracking-widest px-6 h-11 shadow-lg shadow-lime/10 transition-transform"
+            >
+              {t('programDetail.signUpToUse')}
+            </Button>
+          ) : (
+            <>
+              {onSelectProgram && !isActive && (
+                <Button
+                  variant="limeSolid"
+                  onClick={handleSelectProgram}
+                  disabled={actionLoading === 'select'}
+                  className="active:scale-[0.98] font-bebas text-lg tracking-widest px-6 h-11 shadow-lg shadow-lime/10 transition-transform"
+                >
+                  <CheckIcon className="size-4 mr-2" />
+                  {actionLoading === 'select' ? t('programDetail.activating') : isSharedView ? t('programDetail.addToMine') : t('programDetail.useProgram')}
+                </Button>
+              )}
+              {isActive && (
+                <Button asChild variant="limeSolid" className="active:scale-[0.98] font-bebas text-lg tracking-widest px-6 h-11 shadow-lg shadow-lime/10 transition-transform motion-safe:animate-workday-pulse">
+                  <Link to="/workout">
+                    {t('programDetail.goToWorkout')}
+                  </Link>
+                </Button>
+              )}
+              {onDuplicateProgram && (
+                <Button
+                  variant="outline"
+                  onClick={handleDuplicate}
+                  disabled={actionLoading === 'duplicate'}
+                  className="font-mono text-[11px] tracking-widest h-11 px-5 border-border hover:border-sky-500/50 hover:text-sky-400"
+                >
+                  <CopyIcon className="size-3.5 mr-2" />
+                  {actionLoading === 'duplicate' ? t('programDetail.duplicating') : t('programDetail.duplicate')}
+                </Button>
+              )}
+              <ShareButton
+                onShare={(method) => shareProgram(program.name, programId, method)}
+                className="font-mono text-[11px] tracking-widest h-11 px-5 border-border hover:border-pink-500/50 hover:text-pink-400"
+                size="default"
+              />
+              {onEditProgram && (isOwn || userRole === 'admin' || userRole === 'editor') && (
+                <Button
+                  variant="outline"
+                  onClick={() => onEditProgram(programId)}
+                  className="font-mono text-[11px] tracking-widest h-11 px-5 border-amber-500/20 text-amber-400 hover:border-amber-500/40 hover:bg-amber-500/5"
+                >
+                  <EditIcon className="size-3.5 mr-2" />
+                  {t('programDetail.edit')}
+                </Button>
+              )}
+              {onAbandonProgram && isActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAbandonConfirm(true)}
+                  disabled={actionLoading === 'abandon'}
+                  className="font-mono text-[11px] tracking-widest h-11 px-5 border-orange-500/20 text-orange-400 hover:border-orange-500/40 hover:bg-orange-500/5"
+                >
+                  {actionLoading === 'abandon' ? t('programDetail.abandoning') : t('programDetail.abandonProgram')}
+                </Button>
+              )}
+              {onDeleteProgram && isOwn && !isActive && (
+                <Button
+                  variant="danger"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="font-mono text-[11px] tracking-widest h-11 px-5"
+                >
+                  {t('common.delete')}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-muted/60 mb-8" />
+
+      {/* Phase Tabs + Exercise List */}
+      {phases.length > 0 && (
+        <div className="mb-10 motion-safe:animate-fade-in" style={{ animationDelay: '250ms', animationFillMode: 'both' }}>
+          <Tabs value={selectedPhase} onValueChange={setSelectedPhase}>
+            <div className="relative mb-6">
+              <div className="overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
+                <TabsList className="bg-muted/80 border border-border p-1 gap-1 w-max md:w-auto">
+                  {phases.map(phase => (
+                    <TabsTrigger
+                      key={phase.id}
+                      value={String(phase.id)}
+                      className="font-mono text-[11px] tracking-widest data-[state=active]:bg-lime/10 data-[state=active]:text-lime uppercase px-3 md:px-4 py-2 shrink-0"
+                    >
+                      {phase.name}
+                      <span className="ml-1.5 text-[9px] text-muted-foreground hidden sm:inline">({phase.weeks})</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+              {/* Fade mask — right edge scroll hint (mobile only) */}
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none md:hidden" />
+            </div>
+
+            {phases.map(phase => (
+              <TabsContent key={phase.id} value={String(phase.id)}>
+                {/* Phase info */}
+                <div className="mb-5">
+                  <div className="text-[10px] text-muted-foreground tracking-[0.3em] uppercase font-mono">
+                    {t('programDetail.phaseLabel', { id: phase.id })} · {t('programDetail.weeksLabel', { weeks: phase.weeks })}
+                  </div>
+                </div>
+
+                {/* Day workouts */}
+                {phaseWorkouts.length === 0 ? (
+                  <div className="text-center py-16 motion-safe:animate-fade-in">
+                    <div className="font-bebas text-2xl text-muted-foreground/40 mb-2 tracking-widest">{t('programDetail.noExercises')}</div>
+                    <p className="text-sm text-muted-foreground">{t('programDetail.noExercisesDesc')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {phaseWorkouts.map((workout, wi) => {
+                      const dayKey = `${workout.phase}_${workout.day}`
+                      const isExpanded = expandedDays.has(dayKey)
+                      const workoutKey = `p${workout.phase}_${workout.day}`
+                      const lastSession = lastSessions[workoutKey]
+                      const sessionInfo = lastSession ? formatRelativeDate(lastSession) : null
+                      const isToday = isActive && workout.day === TODAY_DAY_ID
+
+                      return (
+                        <div key={dayKey} className={cn(
+                          'rounded-xl bg-muted/60 overflow-hidden motion-safe:animate-slide-up',
+                          isToday && 'ring-1 ring-lime/30',
+                        )} style={{ animationDelay: `${wi * 75}ms`, animationFillMode: 'both' }}>
+                          {/* Day header — clickable */}
+                          <button
+                            type="button"
+                            onClick={() => toggleDay(dayKey)}
+                            className="w-full text-left px-5 py-4 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
+                            aria-expanded={isExpanded}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <span className={cn(
+                                  'font-bebas text-xl tracking-widest uppercase',
+                                  isToday ? 'text-lime' : 'text-foreground',
+                                )}>
+                                  {workout.dayName}
+                                </span>
+                                {isToday && (
+                                  <span className="text-[9px] font-mono tracking-widest text-lime bg-lime/10 px-1.5 py-0.5 rounded-full uppercase">
+                                    {t('programDetail.today')}
+                                  </span>
+                                )}
+                                {workout.dayFocus && (
+                                  <span className="text-[11px] text-muted-foreground font-mono tracking-wide">
+                                    {workout.dayFocus}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-mono tracking-widest text-muted-foreground/60 uppercase">
+                                  {workout.dayType === 'cardio'
+                                    ? `${CARDIO_ACTIVITY[workout.cardioConfig?.activityType || 'running']?.icon || '🏃'} ${t(`cardio.${workout.cardioConfig?.activityType || 'running'}`)}`
+                                    : `${workout.exercises.length} ${t('programDetail.exercises')} · ~${workoutDurations[dayKey] || 0} ${t('common.minutes')}`
+                                  }
+                                </span>
+                              </div>
+                              {sessionInfo && (
+                                <div className={cn(
+                                  'text-[10px] font-mono mt-1',
+                                  sessionInfo.fresh ? 'text-emerald-400/70' : 'text-amber-400/50',
+                                )}>
+                                  {t('programDetail.lastSession')}: {sessionInfo.text}
+                                </div>
+                              )}
+                            </div>
+                            <ChevronIcon className="size-4 text-muted-foreground shrink-0" expanded={isExpanded} />
+                          </button>
+
+                          {/* Exercise list — collapsible */}
+                          {isExpanded && workout.dayType === 'cardio' && (
+                            <div className="border-t border-border/60 motion-safe:animate-fade-in px-5 py-6 text-center">
+                              <div className="text-3xl mb-2">{CARDIO_ACTIVITY[workout.cardioConfig?.activityType || 'running']?.icon || '🏃'}</div>
+                              <div className="font-bebas text-lg text-emerald-400 tracking-wide mb-1">
+                                {t(`cardio.${workout.cardioConfig?.activityType || 'running'}`)}
+                              </div>
+                              <div className="flex justify-center gap-4 text-sm text-muted-foreground">
+                                {workout.cardioConfig?.targetDistanceKm && (
+                                  <span>{t('programDetail.goal')}: <strong className="text-emerald-400">{workout.cardioConfig.targetDistanceKm} km</strong></span>
+                                )}
+                                {workout.cardioConfig?.targetDurationMin && (
+                                  <span>{t('programDetail.duration')}: <strong className="text-emerald-400">{workout.cardioConfig.targetDurationMin} min</strong></span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {isExpanded && workout.dayType !== 'cardio' && (
+                            <div className="border-t border-border/60 motion-safe:animate-fade-in">
+                              {workout.exercises.map((exercise, idx) => (
+                                <div
+                                  key={`${exercise.id}_${idx}`}
+                                  className={cn(
+                                    'px-5 py-4 border-l-[3px] flex items-center gap-4 hover:bg-muted/30 transition-colors',
+                                    PRIORITY_COLORS[exercise.priority as Priority]?.border || 'border-l-border',
+                                    idx < workout.exercises.length - 1 && 'border-b border-border/40',
+                                  )}
+                                >
+                                  {/* Demo thumbnail — resuelto por `exerciseMedia`; `demoImages`
+                                      son nombres de fichero de PB, no URLs (#608). */}
+                                  <ExerciseThumbnail
+                                    exercise={exercise}
+                                    alt={exercise.name}
+                                    className="w-14 h-14 rounded-lg bg-muted overflow-hidden shrink-0"
+                                    imgClassName="w-full h-full object-cover"
+                                  />
+
+                                  {/* Sets x Reps in accent */}
+                                  <div className="shrink-0 w-16 text-center">
+                                    <span className="font-bebas text-lg text-lime tracking-wide">
+                                      {exercise.sets}x{exercise.reps}
+                                    </span>
+                                  </div>
+
+                                  {/* Exercise info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      {(() => {
+                                        const linkId = catalogLinkId(exercise.id)
+                                        return linkId ? (
+                                          <Link
+                                            to={`/exercises/${linkId}`}
+                                            className="text-[13px] font-semibold text-foreground truncate hover:text-lime transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {exercise.name}
+                                          </Link>
+                                        ) : (
+                                          <span className="text-[13px] font-semibold text-foreground truncate">
+                                            {exercise.name}
+                                          </span>
+                                        )
+                                      })()}
+                                      {isAdminOrEditor && exercise.pbRecordId && (
+                                        <a
+                                          href={pbExerciseEditUrl(exercise.pbRecordId)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-amber-400/60 hover:text-amber-400 transition-colors shrink-0"
+                                          aria-label={`Editar ${exercise.name} en PocketBase`}
+                                        >
+                                          <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                                            <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" />
+                                          </svg>
+                                        </a>
+                                      )}
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          'text-[8px] font-mono px-1.5 py-0 shrink-0',
+                                          PRIORITY_COLORS[exercise.priority as Priority]?.badge,
+                                        )}
+                                      >
+                                        {t(PRIORITY_LABEL_KEY[exercise.priority])}
+                                      </Badge>
+                                    </div>
+                                    {exercise.muscles && (
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {exercise.muscles.split(',').map(m => m.trim()).filter(Boolean).join(' · ')}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground/60 font-mono">
+                                      {exercise.rest > 0 && <span>{t('programDetail.rest')}: {exercise.rest}s</span>}
+                                      {exercise.isTimer && exercise.timerSeconds && (
+                                        <span>Timer: {exercise.timerSeconds}s</span>
+                                      )}
+                                    </div>
+                                    {exercise.note && (
+                                      <div className="text-[10px] text-muted-foreground/60 mt-1 italic">{exercise.note}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      )}
+
+      {/* Related programs */}
+      {relatedPrograms.length > 0 && (
+        <div className="mt-16 mb-8">
+          <h2 className="font-bebas text-2xl tracking-widest mb-6 uppercase">{t('programDetail.alsoInterested')}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {relatedPrograms.slice(0, 3).map((rp, ri) => (
+              <button
+                key={rp.id}
+                type="button"
+                className="group text-left cursor-pointer rounded-xl bg-muted/60 p-5 transition-all hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-safe:animate-fade-in"
+                style={{ animationDelay: `${ri * 100}ms`, animationFillMode: 'both' }}
+                onClick={() => onNavigateToProgram?.(rp.id)}
+              >
+                <h3 className="font-bebas text-lg tracking-wide text-foreground group-hover:text-lime transition-colors mb-2 uppercase">
+                  {rp.name}
+                </h3>
+                {rp.description && (
+                  <p className="text-[11px] text-muted-foreground line-clamp-2 mb-3">{rp.description}</p>
+                )}
+                {rp.duration_weeks > 0 && (
+                  <span className="text-[10px] font-mono tracking-widest text-muted-foreground/60 uppercase">
+                    {rp.duration_weeks} {t('programDetail.weeks')}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {onDeleteProgram && (
+        <ConfirmDialog
+          open={showDeleteConfirm}
+          onOpenChange={setShowDeleteConfirm}
+          title={t('programDetail.deleteProgram')}
+          description={t('programDetail.deleteConfirm')}
+          confirmLabel={t('common.delete')}
+          cancelLabel={t('common.cancel')}
+          variant="destructive"
+          onConfirm={() => onDeleteProgram(programId)}
+        />
+      )}
+      {onAbandonProgram && (
+        <ConfirmDialog
+          open={showAbandonConfirm}
+          onOpenChange={setShowAbandonConfirm}
+          title={t('programDetail.abandonProgram')}
+          description={t('programDetail.abandonConfirm')}
+          confirmLabel={t('programDetail.abandonConfirmLabel')}
+          cancelLabel={t('common.cancel')}
+          variant="destructive"
+          onConfirm={handleAbandon}
+        />
+      )}
+    </div>
+  )
+}

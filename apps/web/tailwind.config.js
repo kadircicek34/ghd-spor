@@ -1,0 +1,189 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: ['class'],
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+    // Include core package so Tailwind sees class strings in style-tokens.ts etc.
+    '../../packages/core/**/*.{js,ts,jsx,tsx}',
+  ],
+  // Belt-and-suspenders safelist for score palette (SCORE_COLORS / SCORE_BORDER_COLORS /
+  // SCORE_BAR_COLORS in packages/core/lib/style-tokens.ts). These are assembled
+  // dynamically at runtime so the content scan alone isn't enough.
+  safelist: [
+    // bg color for each grade badge (SCORE_COLORS)
+    'bg-green-500', 'bg-gold-500', 'bg-yellow-500', 'bg-orange-500', 'bg-red-500',
+    // text color paired with each bg (SCORE_COLORS)
+    'text-white', 'text-black', 'text-gold-foreground',
+    // border ring for each grade (SCORE_BORDER_COLORS)
+    'border-green-500/30', 'border-gold-500/30', 'border-yellow-500/30',
+    'border-orange-500/30', 'border-red-500/30',
+    // bar fill colors (SCORE_BAR_COLORS — same hues as bg, listed for clarity)
+    // already covered by bg-* above
+  ],
+  theme: {
+    extend: {
+      colors: {
+        /* shadcn semantic tokens */
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          ring: 'hsl(var(--sidebar-ring))',
+        },
+        /*
+         * Historical token name kept for compatibility: `--lime` now holds the
+         * GHD gold accent (see index.css). Prefer `gold-*` in new code.
+         * Numeric steps also resolve to gold so legacy `lime-400` classes that
+         * live outside this branch's scope can't leak neon green.
+         */
+        lime: {
+          50: '#FBF7EA',
+          100: '#F6EDCE',
+          200: '#EDDCA0',
+          300: '#E2C56A',
+          400: '#D4AF37',
+          500: '#C9A227',
+          600: '#A87F45',
+          700: '#87642F',
+          800: '#6B4E26',
+          900: '#4A3619',
+          DEFAULT: 'hsl(var(--lime))',
+          foreground: 'hsl(var(--lime-foreground))',
+          text: 'hsl(var(--lime-text))',
+        },
+        /* GHD gold scale — obsidian/gold brand palette. */
+        gold: {
+          50: '#FBF7EA',
+          100: '#F6EDCE',
+          200: '#EDDCA0',
+          300: '#E2C56A',
+          400: '#D4AF37',
+          500: '#C9A227',
+          600: '#A87F45',
+          700: '#87642F',
+          800: '#6B4E26',
+          900: '#4A3619',
+          DEFAULT: 'hsl(var(--lime))',
+          foreground: 'hsl(var(--lime-foreground))',
+          text: 'hsl(var(--lime-text))',
+        },
+      },
+      fontFamily: {
+        bebas: ['Bebas Neue', 'sans-serif'],
+        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // JetBrains Mono already ships in the index.html font link, but without
+        // this entry `font-mono` silently resolves to Tailwind's default stack.
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+        'workday-pulse': {
+          '0%': { boxShadow: '0 0 0 0 hsl(43 74% 52% / 0.5)' },
+          '70%': { boxShadow: '0 0 0 8px hsl(43 74% 52% / 0)' },
+          '100%': { boxShadow: '0 0 0 0 hsl(43 74% 52% / 0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.8)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        'slide-up': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'slide-down': {
+          from: { opacity: '0', transform: 'translateY(-4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'dot-pulse': {
+          '0%, 80%, 100%': { opacity: '0.3', transform: 'scale(0.8)' },
+          '40%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'gentle-float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(8px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'workday-pulse': 'workday-pulse 2s infinite',
+        'fade-in': 'fade-in 0.2s ease-out',
+        'gentle-float': 'gentle-float 3s ease-in-out infinite',
+        'slide-in-right': 'slide-in-right 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        'scale-in': 'scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-up': 'slide-up 0.25s ease-out',
+        'slide-down': 'slide-down 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+        'dot-pulse': 'dot-pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+    },
+  },
+  plugins: [
+    function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-none': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        },
+      })
+    },
+  ],
+}

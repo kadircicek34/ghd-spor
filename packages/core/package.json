@@ -1,0 +1,32 @@
+{
+  "name": "@calistenia/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Código compartido entre web y mobile: types, hooks, lib, data, locales. Sin dependencias de DOM ni React Native — lo específico de cada plataforma se inyecta vía initCore() (ver platform.ts).",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dayjs": "1.11.21",
+    "i18next": "^26.4.0",
+    "pocketbase": "^0.27.3",
+    "react-i18next": "^17.0.12"
+  },
+  "peerDependencies": {
+    "@tanstack/query-sync-storage-persister": "^5",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-query-persist-client": "^5",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@tanstack/query-sync-storage-persister": "^5.102.6",
+    "@tanstack/react-query": "^5.102.6",
+    "@tanstack/react-query-persist-client": "^5.102.6",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

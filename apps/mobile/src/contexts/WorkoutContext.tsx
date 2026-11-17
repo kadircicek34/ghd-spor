@@ -1,0 +1,203 @@
+// Port 1:1 del WorkoutContext de apps/web — los hooks de core son portables.
+import { createContext, use, useCallback, useEffect, useMemo, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useProgress, type PREvent } from '@calistenia/core/hooks/useProgress'
+import { usePrograms, type ActiveEnrollment } from '@calistenia/core/hooks/usePrograms'
+import { useWeekAwareGetWorkout, useProgramProgress } from '@calistenia/core/hooks/useProgramProgress'
+import { syncWidgetSnapshot } from '@/lib/sync-widget-snapshot'
+import { useWorkoutStreak, type WorkoutStreak } from '@calistenia/core/hooks/useWorkoutStreak'
+import { getEffectiveWeeklyGoal } from '@calistenia/core/lib/weeklyGoal'
+import { getWeekDoneDays } from '@calistenia/core/lib/weekSummary'
+import { todayStr } from '@calistenia/core/lib/dateUtils'
+import type { ProgramProgress } from '@calistenia/core/lib/programProgress'
+import type { Settings, ProgressMap, SetData, ExerciseLog, Phase, WeekDay, Workout, ProgramMeta, CardioDayConfig, CircuitDefinition, ExerciseTiming } from '@calistenia/core/types'
+
+// ── Context interface (state + actions + meta) ──────────────────────────────
+
+interface WorkoutState {
+  // Progress
+  progress: ProgressMap
+  settings: Settings
+  usePB: boolean
+  pbReady: boolean
+  // Programs
+  programs: ProgramMeta[]
+  activeProgram: ProgramMeta | null
+  phases: Phase[]
+  weekDays: WeekDay[]
+  cardioDayConfigs: Record<string, CardioDayConfig>
+  /** Circuitos del programa por `p{fase}_{día}` (#625). */
+  circuitDayConfigs: Record<string, CircuitDefinition>
+  programsReady: boolean
+  /** Progreso dentro del programa activo: semana X de Y, fase real, «hoy toca» (#616). */
+  programProgress: ProgramProgress
+  /**
+   * La inscripción activa. Se expone —y no solo el programa— porque el opt-in
+   * de la progresión automática (`auto_progress`, #617) vive en ella: es por
+   * INSCRIPCIÓN, no por usuario ni por programa.
+   */
+  activeEnrollment: ActiveEnrollment | null
+}
+
+interface WorkoutActions {
+  // Progress actions
+  logSet: (exerciseId: string, workoutKey: string, setData: Partial<SetData>, date?: string) => Promise<PREvent | null>
+  markWorkoutDone: (workoutKey: string, note?: string, warmupCooldown?: { warmupSkipped?: boolean; warmupDurationSeconds?: number; cooldownSkipped?: boolean; cooldownDurationSeconds?: number }, yogaMeta?: { duration_seconds?: number; poses_completed?: number; total_poses?: number }, date?: string, timing?: { durationSeconds?: number; exerciseTimings?: ExerciseTiming[] }) => Promise<void>
+  unmarkWorkoutDone: (workoutKey: string, date?: string) => Promise<void>
+  markCardioDayDone: (workoutKey: string, cardioSessionId: string, note?: string, date?: string) => void
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>
+  // Progress queries
+  isWorkoutDone: (workoutKey: string, date?: string) => boolean
+  getExerciseLogs: (exerciseId: string, limit?: number) => ExerciseLog[]
+  getWeeklyDoneCount: () => number
+  getTotalSessions: () => number
+  /** Mejor racha semanal de la historia, en semanas (#801). */
+  getLongestStreak: () => number
+  /** Racha semanal viva, en semanas: la misma que `user_stats` (#801). */
+  getCurrentStreak: () => number
+  /** La racha semanal entera, con la semana en curso (`thisWeek`). */
+  getWeeklyStreak: () => WorkoutStreak
+  getMonthActivity: () => Record<string, boolean>
+  getLastSessionDate: () => string | null
+  /** Días con sesión completada, 'YYYY-MM-DD' ascendente (#800). */
+  getDoneDates: () => string[]
+  checkAndUpdatePR: (exerciseId: string, reps: string, weight?: number) => Promise<PREvent | null>
+  // Program actions
+  getWorkout: (phaseNumber: number, dayId: string) => Workout | null
+  selectProgram: (programId: string) => Promise<boolean>
+  abandonProgram: (programId: string) => Promise<boolean>
+  /** Devuelve el id de la copia, o null si falló (#612). */
+  duplicateProgram: (programId: string) => Promise<string | null>
+  deleteProgram: (programId: string) => Promise<boolean>
+  refreshPrograms: () => Promise<void>
+  /** Override manual de fase, guardado en `user_programs` (no en settings). */
+  setPhaseOverride: (phase: number | null) => Promise<boolean>
+}
+
+interface WorkoutContextValue {
+  state: WorkoutState
+  actions: WorkoutActions
+}
+
+const WorkoutContext = createContext<WorkoutContextValue | null>(null)
+
+export function useWorkout() {
+  const ctx = use(WorkoutContext)
+  if (!ctx) throw new Error('useWorkout must be used within WorkoutProvider')
+  return ctx
+}
+
+export function useWorkoutState() {
+  return useWorkout().state
+}
+
+export function useWorkoutActions() {
+  return useWorkout().actions
+}
+
+// ── Provider ────────────────────────────────────────────────────────────────
+
+interface WorkoutProviderProps {
+  userId: string | null
+  children: ReactNode
+}
+
+export function WorkoutProvider({ userId, children }: WorkoutProviderProps) {
+  const {
+    programs, activeProgram, activeEnrollment, phases, weekDays, cardioDayConfigs, circuitDayConfigs, getWorkout: rawGetWorkout,
+    selectProgram, abandonProgram, duplicateProgram, deleteProgram, refreshPrograms, programsReady,
+  } = usePrograms(userId)
+
+  const {
+    progress, settings, usePB, pbReady,
+    logSet: rawLogSet, markWorkoutDone, unmarkWorkoutDone, markCardioDayDone, isWorkoutDone,
+    getExerciseLogs, getWeeklyDoneCount, getTotalSessions,
+    updateSettings, getMonthActivity,
+    getLastSessionDate, getDoneDates, checkAndUpdatePR,
+  } = useProgress(userId, activeProgram?.id ?? null)
+
+  // Racha semanal (#801) con el objetivo efectivo (#853). Sin programa hay que
+  // pasar `null`: `weekDays` trae entonces los días del programa de reserva.
+  const weeklyStreak = useWorkoutStreak({
+    userId, progress, settings, updateSettings,
+    effectiveGoal: getEffectiveWeeklyGoal(settings, activeProgram ? { weekDays } : null),
+    goalReady: pbReady && programsReady,
+  })
+  const getWeeklyStreak = useCallback(() => weeklyStreak, [weeklyStreak])
+  const getLongestStreak = useCallback(() => weeklyStreak.best, [weeklyStreak])
+  const getCurrentStreak = useCallback(() => weeklyStreak.current, [weeklyStreak])
+
+  const { programProgress, setPhaseOverride } = useProgramProgress({
+    userId, activeProgram, activeEnrollment, phases, weekDays, progress,
+    settingsPhase: settings.phase,
+  })
+
+  // #755/#716: el día sale con la dosis de la semana en curso — la rampa de
+  // `weekly_progression` primero y, en la última semana de una fase con
+  // `deload_last_week`, la mitad de series y `workout.deload`. Se envuelve
+  // AQUÍ, después de saber la semana, y es lo que reciben todos los
+  // consumidores del día.
+  const getWorkout = useWeekAwareGetWorkout(rawGetWorkout, phases, programProgress)
+
+  // Wrap logSet to auto-detect PRs
+  const logSet = useCallback(async (exerciseId: string, workoutKey: string, setData: Partial<SetData>, date?: string): Promise<PREvent | null> => {
+    await rawLogSet(exerciseId, workoutKey, setData, date)
+    if (setData.reps) return checkAndUpdatePR(exerciseId, setData.reps as string, setData.weight ?? undefined)
+    return null
+  }, [rawLogSet, checkAndUpdatePR])
+
+  const state = useMemo<WorkoutState>(() => ({
+    progress, settings, usePB, pbReady,
+    programs, activeProgram, phases, weekDays, cardioDayConfigs, circuitDayConfigs, programsReady, programProgress,
+    activeEnrollment,
+  }), [progress, settings, usePB, pbReady, programs, activeProgram, phases, weekDays, cardioDayConfigs, circuitDayConfigs, programsReady, programProgress, activeEnrollment])
+
+  const actions = useMemo<WorkoutActions>(() => ({
+    logSet, markWorkoutDone, unmarkWorkoutDone, markCardioDayDone, updateSettings,
+    isWorkoutDone, getExerciseLogs, getWeeklyDoneCount,
+    getTotalSessions, getLongestStreak, getCurrentStreak, getWeeklyStreak, getMonthActivity,
+    getLastSessionDate, getDoneDates, checkAndUpdatePR,
+    getWorkout, selectProgram, abandonProgram, duplicateProgram, deleteProgram, refreshPrograms, setPhaseOverride,
+  }), [
+    logSet, markWorkoutDone, unmarkWorkoutDone, markCardioDayDone, updateSettings,
+    isWorkoutDone, getExerciseLogs, getWeeklyDoneCount,
+    getTotalSessions, getLongestStreak, getCurrentStreak, getWeeklyStreak, getMonthActivity,
+    getLastSessionDate, getDoneDates, checkAndUpdatePR,
+    getWorkout, selectProgram, abandonProgram, duplicateProgram, deleteProgram, refreshPrograms, setPhaseOverride,
+  ])
+
+  const { i18n } = useTranslation()
+
+  // Snapshot para widgets: en hidratación, al marcar sesiones (progress cambia),
+  // al cambiar de programa/ajustes. writeWidgetSnapshot deduplica por JSON.
+  // Los getters van fuera de deps a propósito — son estables o derivados de
+  // progress, que ya está en deps.
+  useEffect(() => {
+    if (!programsReady) return
+    syncWidgetSnapshot({
+      lang: i18n.language,
+      programName: activeProgram?.name ?? null,
+      settings,
+      phase: programProgress.currentPhase,
+      weekDays,
+      getWorkout,
+      isWorkoutDone,
+      // Racha VIVA, no el récord: es el número que el usuario lee a diario.
+      streak: getCurrentStreak(),
+      // Deja que el sync compare con su propio "hoy": así el widget pinta la
+      // racha en lima solo si hoy ya cuenta, y apagada si se sostiene por ayer.
+      lastSessionDate: getLastSessionDate(),
+      // Semana de calendario en días distintos (#853), como el resto de «X de Y».
+      // Sin cardio libre: el proveedor no carga sus fechas.
+      weeklyDone: getWeekDoneDays(todayStr(), progress),
+    })
+  }, [programsReady, activeProgram, settings, programProgress.currentPhase, weekDays, progress, weeklyStreak.current, i18n.language]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const value = useMemo(() => ({ state, actions }), [state, actions])
+
+  return (
+    <WorkoutContext.Provider value={value}>
+      {children}
+    </WorkoutContext.Provider>
+  )
+}

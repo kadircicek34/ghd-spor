@@ -1,0 +1,4751 @@
+{
+  "generated": "2026-10-16T01:35:28.423Z",
+  "versions": [
+    {
+      "version": "1.14.2",
+      "date": "2026-10-16",
+      "summary": {
+        "es": "El día de la app ya cambia a medianoche de tu hora, estés donde estés, y durante el entreno puedes ver de un vistazo los ejercicios que te faltan.",
+        "en": "The app’s day now changes at midnight your time, wherever you are, and during a workout you can see at a glance which exercises are left."
+      },
+      "highlights": [
+        {
+          "icon": "🕛",
+          "type": "fix",
+          "title": {
+            "es": "El día cambia a tu medianoche",
+            "en": "The day changes at your midnight"
+          },
+          "body": {
+            "es": "«Hoy» sigue la hora de tu móvil: ya no pasa al día siguiente antes de tiempo si tu cuenta tenía guardada otra zona horaria.",
+            "en": "«Today» follows your phone’s clock: it no longer jumps to tomorrow early if your account had another time zone saved."
+          }
+        },
+        {
+          "icon": "📋",
+          "type": "feat",
+          "title": {
+            "es": "Ejercicios que faltan",
+            "en": "Exercises left"
+          },
+          "body": {
+            "es": "Toca el contador de la cabecera durante el entreno para ver los hechos, el actual y los que faltan, y salta a cualquiera.",
+            "en": "Tap the counter in the header during a workout to see done, current and remaining exercises, and jump to any of them."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Quick list of exercises left during a workout (#919)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "d646f75"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "The app’s “today” follows the device time zone, not the saved one (#920)",
+              "scope": "time",
+              "breaking": false,
+              "hash": "f4dff11"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.14.1",
+      "date": "2026-10-09",
+      "summary": {
+        "es": "Al terminar un entreno, el inicio lo marca como hecho al momento, el aviso de récord ya no vibra sin parar, y llega el registro de ayunos en Nutrición.",
+        "en": "Finishing a workout now marks it done on Home right away, the new-record toast no longer vibrates nonstop, and fasting tracking arrives in Nutrition."
+      },
+      "highlights": [
+        {
+          "icon": "✅",
+          "type": "fix",
+          "title": {
+            "es": "El inicio, al día tras entrenar",
+            "en": "Home up to date after training"
+          },
+          "body": {
+            "es": "Al volver de un entreno, el día ya sale como hecho y tu programa no desaparece, aunque entrenes de noche o falle la red.",
+            "en": "When you come back from a workout, the day shows as done and your program stays put, even late at night or on a flaky connection."
+          }
+        },
+        {
+          "icon": "📳",
+          "type": "fix",
+          "title": {
+            "es": "Aviso de récord sin vibración infinita",
+            "en": "New-record toast stops vibrating"
+          },
+          "body": {
+            "es": "Al batir un récord el móvil vibra una sola vez y el aviso se cierra solo.",
+            "en": "Beating a record vibrates once and the toast closes on its own."
+          }
+        },
+        {
+          "icon": "⏱️",
+          "type": "feat",
+          "title": {
+            "es": "Ayunos en Nutrición",
+            "en": "Fasting in Nutrition"
+          },
+          "body": {
+            "es": "Registra ayunos de 12 a 48 h o con tu propio objetivo, con cronómetro, objetivo semanal e historial editable.",
+            "en": "Track 12–48 h fasts or set your own target, with a timer, weekly goal and editable history."
+          }
+        },
+        {
+          "icon": "⚔️",
+          "type": "feat",
+          "title": {
+            "es": "Batallas en la web",
+            "en": "Battles on the web"
+          },
+          "body": {
+            "es": "La web estrena batallas, elegir día en Hoy y «Hecho hoy» con tus minutos y series, como en el móvil.",
+            "en": "The web gets battles, picking a day on Today and a «Done today» card with your minutes and sets, like the app."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Add fasting tracking to web and native (#911)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "67d6578"
+            },
+            {
+              "description": "Batallas, elegir día en Hoy y «Hecho hoy» de fuerza, como en el móvil (#852) (#908)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "03274b0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Terminar un entreno deja el inicio al día + lógica compartida en core (#916)",
+              "scope": null,
+              "breaking": false,
+              "hash": "353874b"
+            },
+            {
+              "description": "El aviso de nuevo PR vibraba sin parar (#913)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "3dfdc1d"
+            },
+            {
+              "description": "Etiqueta de la pestaña de ayunos en web (#912)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "2bf852a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.14.0",
+      "date": "2026-10-02",
+      "summary": {
+        "es": "Un inicio nuevo que te dice qué hacer hoy, pestaña Comunidad, racha semanal, logros, retos y batallas con tus propios días, y la app completa en inglés.",
+        "en": "A new home that tells you what to do today, a Community tab, weekly streaks, achievements, challenges and battles with your own days, and the whole app in English."
+      },
+      "highlights": [
+        {
+          "icon": "🏠",
+          "type": "feat",
+          "title": {
+            "es": "Inicio «qué hago hoy»",
+            "en": "Today-first home"
+          },
+          "body": {
+            "es": "El inicio te muestra tu entreno de hoy, tu semana y sugerencias «Para ti». Más simple hasta tu 3.er entreno.",
+            "en": "Home shows today's workout, your week and «For you» picks. Simpler until your 3rd workout."
+          }
+        },
+        {
+          "icon": "🧭",
+          "type": "feat",
+          "title": {
+            "es": "5 pestañas y Perfil desde el avatar",
+            "en": "5 tabs and Profile from your avatar"
+          },
+          "body": {
+            "es": "Nueva navegación: Inicio, Entrenar, Progreso, Comunidad y más; tu Perfil se abre desde el avatar.",
+            "en": "New navigation: Home, Train, Progress, Community and more; open your Profile from your avatar."
+          }
+        },
+        {
+          "icon": "👥",
+          "type": "feat",
+          "title": {
+            "es": "Pestaña Comunidad",
+            "en": "Community tab"
+          },
+          "body": {
+            "es": "Actividad, retos, batallas y ranking semanal en un solo sitio, con sugerencias de gente activa a la que seguir.",
+            "en": "Activity, challenges, battles and weekly ranking in one place, with suggestions of active people to follow."
+          }
+        },
+        {
+          "icon": "🔥",
+          "type": "feat",
+          "title": {
+            "es": "Racha semanal y día perdido",
+            "en": "Weekly streak and missed days"
+          },
+          "body": {
+            "es": "La racha cuenta por semanas con tu objetivo real, y si pierdes un día te lo decimos sin dramas.",
+            "en": "Your streak counts by weeks against your real goal, and a missed day is flagged gently."
+          }
+        },
+        {
+          "icon": "🏆",
+          "type": "feat",
+          "title": {
+            "es": "Logros, retos y batallas",
+            "en": "Achievements, challenges and battles"
+          },
+          "body": {
+            "es": "Hitos tempranos y pantalla de logros, el reto «Tu primera dominada» y batallas con un día de programa o tu propia batalla.",
+            "en": "Early milestones and an achievements screen, the «Your first pull-up» challenge, and battles from a program day or your own."
+          }
+        },
+        {
+          "icon": "🌍",
+          "type": "feat",
+          "title": {
+            "es": "App en inglés",
+            "en": "App in English"
+          },
+          "body": {
+            "es": "Ejercicios, repeticiones, macros, avisos y primer entreno traducidos; los avisos llegan en tu idioma.",
+            "en": "Exercises, reps, macros, reminders and first workout translated; notifications arrive in your language."
+          }
+        },
+        {
+          "icon": "🔔",
+          "type": "feat",
+          "title": {
+            "es": "Más avisos que te acompañan",
+            "en": "Reminders that bring you back"
+          },
+          "body": {
+            "es": "Recuperación a los 7 y 14 días, «nuevo comienzo» los lunes y fin del descanso con la pantalla apagada.",
+            "en": "Comeback nudges at 7 and 14 days, Monday fresh starts, and rest-end alerts with the screen off."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Reto «Tu primera dominada» y aviso diario de retos en solitario (#805) (#907)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "323e5619"
+            },
+            {
+              "description": "Día perdido explícito y reencuadre amable en la semana (#809) (#900)",
+              "scope": "home",
+              "breaking": false,
+              "hash": "44efe4f4"
+            },
+            {
+              "description": "«Entrena con alguien» en el primer entreno y mismo programa para el invitado (#803) (#904)",
+              "scope": "referrals",
+              "breaking": false,
+              "hash": "d2e46789"
+            },
+            {
+              "description": "Promover Intermedio – Balance Total a programa curado (#740) (#905)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "aca60d95"
+            },
+            {
+              "description": "Hitos tempranos y pantalla de logros (#802) (#903)",
+              "scope": "achievements",
+              "breaking": false,
+              "hash": "7cce3cdb"
+            },
+            {
+              "description": "Sugerir gente activa para seguir a quien no tiene amigos (#806) (#902)",
+              "scope": "social",
+              "breaking": false,
+              "hash": "1ba86f1d"
+            },
+            {
+              "description": "Retar con un día de programa o con tu propia batalla (#882) (#899)",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "07e671fd"
+            },
+            {
+              "description": "Iconos en las opciones de «¿cómo conociste la app?» (#888)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "b91dedde"
+            },
+            {
+              "description": "Convertir un día de programa en batalla (#882) (#885)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "3b291b64"
+            },
+            {
+              "description": "«Entrenos» de Progreso y Perfil cuentan las sesiones de la cuenta (#869) (#875)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "35f055dc"
+            },
+            {
+              "description": "Inicio «qué hago hoy» por estados, semana y «Para ti» (#855) (#867)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "c3c84cfc"
+            },
+            {
+              "description": "Racha semanal con el objetivo efectivo — un solo algoritmo en cliente y servidor (#801) (#849)",
+              "scope": "streak",
+              "breaking": false,
+              "hash": "8ca4c8c0"
+            },
+            {
+              "description": "Inicio «qué hago hoy» — bloque Hoy por estados, semana y «Para ti» (#858) (#865)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "4e7d4d94"
+            },
+            {
+              "description": "5 pestañas, Perfil desde el avatar y redirecciones (#859) (#866)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "01163e17"
+            },
+            {
+              "description": "Navegación de 5 destinos y pantallas Entrenar, Progreso y Perfil (#856) (#868)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "fbe8bcfa"
+            },
+            {
+              "description": "Pestaña Comunidad — actividad, retos, batallas y ranking (#860) (#862)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "96fd2389"
+            },
+            {
+              "description": "Pantalla Comunidad con actividad, retos y ranking (#857) (#863)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "a45f1e3d"
+            },
+            {
+              "description": "Estado del inicio compartido, una sola semana y objetivo semanal efectivo (#853) (#864)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "0627bbb9"
+            },
+            {
+              "description": "Contrato de eventos del nuevo inicio (#854) (#861)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "fdc629a0"
+            },
+            {
+              "description": "Nombres de ejercicio, reps y macros en inglés (#847) (#848)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "42af2511"
+            },
+            {
+              "description": "Inicio simplificado hasta el 3.er entreno (#808) (#846)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "73cff1d7"
+            },
+            {
+              "description": "Recuperación a los 7/14 días y «nuevo comienzo» de los lunes (#807) (#843)",
+              "scope": "push",
+              "breaking": false,
+              "hash": "0920fcb3"
+            },
+            {
+              "description": "Objetivo «3 entrenos en tus primeros 7 días» en el inicio (#800) (#842)",
+              "scope": "activation",
+              "breaking": false,
+              "hash": "1ab5c4d5"
+            },
+            {
+              "description": "Guardar el idioma del usuario y mandar cada push en su idioma (#804) (#841)",
+              "scope": "push",
+              "breaking": false,
+              "hash": "523120b6"
+            },
+            {
+              "description": "Portadas e imágenes de ejercicio ampliables en web y móvil (#776)",
+              "scope": "",
+              "breaking": false,
+              "hash": "24608bcd"
+            },
+            {
+              "description": "Menos pasos antes de entrenar (#820) (#838)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "700093d4"
+            },
+            {
+              "description": "Informe de retención semanal reproducible desde OpenPanel (#831)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "57679cd2"
+            },
+            {
+              "description": "Contexto de abandono en workout_abandoned (#829)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "dabc0504"
+            },
+            {
+              "description": "Push primero y promesa del próximo entreno (#825) (#835)",
+              "scope": "celebración",
+              "breaking": false,
+              "hash": "629a5b1a"
+            },
+            {
+              "description": "Traduce al inglés el lote B y la regla bilingüe pasa a estricta (#799) (#837)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "6e2298e5"
+            },
+            {
+              "description": "Traduce al inglés el contenido del lote A (#798) (#836)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "44067430"
+            },
+            {
+              "description": "Primer entreno del día 0 a 3 ejercicios con nota técnica y regresión (#832)",
+              "scope": "",
+              "breaking": false,
+              "hash": "fab150ca"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "El onboarding espera el título del día también en inglés (#905) (#906)",
+              "scope": "e2e",
+              "breaking": false,
+              "hash": "f472a92c"
+            },
+            {
+              "description": "La descripción de la ficha de los programas llega a la base (#761) (#901)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "228c0e9d"
+            },
+            {
+              "description": "Balance Total sin las series repetidas en reps (#889) (#898)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "d563435e"
+            },
+            {
+              "description": "Una sola regla de nombre visible en Comunidad (#892) (#897)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "a5b5567c"
+            },
+            {
+              "description": "Retos activos primero y sugerencias debajo en Comunidad (#891) (#896)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "67b2692f"
+            },
+            {
+              "description": "Historial de batallas y cardio muestran el día local, no el UTC (#893) (#895)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "51b7ad94"
+            },
+            {
+              "description": "El ranking semanal de Comunidad cuenta solo entrenos de programa y libres (#890) (#894)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "348fd634"
+            },
+            {
+              "description": "Perfil conserva el scroll, sesiones de la cuenta y etiqueta sin partir (#881) (#887)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "6f480776"
+            },
+            {
+              "description": "Fechas y hora locales sin dayjs.tz, que falla en Hermes (#880) (#886)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "226294eb"
+            },
+            {
+              "description": "Las 4 pestañas de Progreso caben a 360-390 px (#873) (#876)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "187f53d4"
+            },
+            {
+              "description": "Recordatorios, avisos y fin del onboarding abren el día de hoy (#870) (#874)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "bebd28e1"
+            },
+            {
+              "description": "Limpia la última respuesta de notificación push tras consumirla (#830)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "5cb838a5"
+            },
+            {
+              "description": "Inglés por defecto para cualquier idioma que no sea español (#821) (#828)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "02b73812"
+            },
+            {
+              "description": "Validador avisa de campos de contenido sin traducir (#797) (#827)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "571f52df"
+            },
+            {
+              "description": "Traduce a inglés las pantallas del primer entreno, celebración y widgets (#834)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "1bc83c7d"
+            },
+            {
+              "description": "El permiso de push ya no se pide antes de la celebración del primer entreno (#833)",
+              "scope": "",
+              "breaking": false,
+              "hash": "51951017"
+            },
+            {
+              "description": "La traducción de Chrome dejaba de tirar la app entera (#790)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "baa005f5"
+            },
+            {
+              "description": "El entreno vuelve a ser foreground service de tipo specialUse (fin del descanso con pantalla apagada) (#779)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "c539146c"
+            },
+            {
+              "description": "El service worker ya no se come el bridge de OAuth (login Google en blanco en el móvil) (#777)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "a4767a70"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.13.2",
+      "date": "2026-09-13",
+      "summary": {
+        "es": "La notificación del entreno ahora tiene botón para detenerla, y los programas enseñan cada día por dentro y progresan semana a semana.",
+        "en": "The workout notification now has a button to stop it, and programs show what each day contains and progress week by week."
+      },
+      "highlights": [
+        {
+          "icon": "🔔",
+          "type": "feat",
+          "title": {
+            "es": "Detener la notificación del entreno",
+            "en": "Stop the workout notification"
+          },
+          "body": {
+            "es": "La notificación del entrenamiento en curso tiene un botón DETENER y muestra tu progreso de series también durante el descanso. El entreno sigue en la app.",
+            "en": "The workout-in-progress notification has a STOP button and shows your set progress during rest too. Your workout stays open in the app."
+          }
+        },
+        {
+          "icon": "🗓️",
+          "type": "feat",
+          "title": {
+            "es": "Cada día del programa, por dentro",
+            "en": "Every program day, inside out"
+          },
+          "body": {
+            "es": "En la ficha de un programa puedes abrir cada día y ver sus ejercicios antes de empezarlo.",
+            "en": "On a program's page you can open each day and see its exercises before you start."
+          }
+        },
+        {
+          "icon": "📈",
+          "type": "feat",
+          "title": {
+            "es": "Progresión semana a semana",
+            "en": "Week-by-week progression"
+          },
+          "body": {
+            "es": "Los programas suben la dificultad dentro de cada fase y aligeran la última semana para que descanses.",
+            "en": "Programs ramp up within each phase and lighten the last week so you recover."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Session Replay de Sentry (#768)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "58e4dd2"
+            },
+            {
+              "description": "Desglose de cada día en la ficha del programa (#767)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "2b88615"
+            },
+            {
+              "description": "Progresión semanal dentro de la fase (#755) (#756)",
+              "scope": "motor",
+              "breaking": false,
+              "hash": "d55b421"
+            },
+            {
+              "description": "Semana de descarga en el motor: flag por fase, mitad de series y badge (#716) (#742)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "8fb9ab9"
+            },
+            {
+              "description": "«PARA TI» prefiere los «Mujer ·» a las usuarias y desempata sin alfabeto (#717) (#739)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "7e244b1"
+            },
+            {
+              "description": "Reglas de lógica de entrenamiento en el validador, primero como aviso (#715) (#737)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "c1fedd0"
+            },
+            {
+              "description": "Reetiquetar goal_type, contraindicaciones y material de los 15 oficiales (#713) (#736)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "9d0535b"
+            },
+            {
+              "description": "Resiembra de contenido oficial que llega a las filas que ya existen en prod (#712) (#734)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "acb0f7c"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Botón «detener» en la notificación del entreno (rechazo de Play vc41) (#769)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "c90d998"
+            },
+            {
+              "description": "Hipertrofia se quedó sin títulos de día; el validador ahora los exige (#762) (#766)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "f7eddd6"
+            },
+            {
+              "description": "Fundamentos: regresiones en las notas y el descanso bien contado (#719) (#765)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "13e7c6a"
+            },
+            {
+              "description": "Hipertrofia: piernas 2x/semana, entrada realista y pico de una variable (#723) (#762)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "7560240"
+            },
+            {
+              "description": "Glúteo + Tonificación: escalera por fases y semana 1 de 24 series (#731) (#760)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "a883517"
+            },
+            {
+              "description": "Fundamentos: rodillas como ejercicio propio, remo de verdad y descarga real (#719) (#763)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "7a25049"
+            },
+            {
+              "description": "Handstand Roadmap: intentos libres desde fase 1 (#728) (#759)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "3f71fba"
+            },
+            {
+              "description": "Planche Roadmap: fuera straddle/full, descarga real y muñeca sin agrupar (#730) (#758)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "25fd703"
+            },
+            {
+              "description": "Muscle-up Roadmap: recorta tirón colgado, false grip real y calendario de intentos (#729) (#757)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "00c7880"
+            },
+            {
+              "description": "Pull-up Roadmap: dead hang real, negativas dosificadas y fase 3 con estímulo (#727) (#754)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "3e1dbfc"
+            },
+            {
+              "description": "Ganar Músculo: entrena el fondo que promete y escalona el volumen (#721) (#753)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "39cfdeb"
+            },
+            {
+              "description": "Fuerza Total: mantener de verdad, con descarga y sin regresiones (#726) (#751)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "5d4918e"
+            },
+            {
+              "description": "Fuerza Funcional: potencia real, ruta de entrada al dip y descarga (#733) (#752)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "12edc2a"
+            },
+            {
+              "description": "Volumen Máximo: planche que progresa, pico hipertrófico y descarga real (#725) (#750)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "79ffff9"
+            },
+            {
+              "description": "La tabla de 1788881000 vuelve a ser espejo de SKELETONS (intensity de Quema Grasa) (#749)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "d04d422"
+            },
+            {
+              "description": "Quema Grasa: cardio y nutrición de verdad, remo beginner y descarga real (#720) (#748)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "532d191"
+            },
+            {
+              "description": "Normalizar el install referrer de Play para OpenPanel (#746) (#747)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "27fda71"
+            },
+            {
+              "description": "Mujer · Full Body Toning: tirón en puerta, glúteo e isquio y progresión por variante (#732) (#745)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "75d121f"
+            },
+            {
+              "description": "Cutting Élite: periodización de cutting, tirón realista, cardio y nutrición (#724) (#744)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "71835b9"
+            },
+            {
+              "description": "Intermedio · Definición: nutrición, cardio y bajo impacto (#722) (#743)",
+              "scope": "programas",
+              "breaking": false,
+              "hash": "6be3f63"
+            },
+            {
+              "description": "Chinup, nordic, material y false grip en el catálogo de ejercicios (#714) (#741)",
+              "scope": "catalogo",
+              "breaking": false,
+              "hash": "ca767cc"
+            },
+            {
+              "description": "Las imágenes llegaban corruptas al servidor de IA (#709)",
+              "scope": "mcp-server",
+              "breaking": false,
+              "hash": "0fdb159"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.13.1",
+      "date": "2026-09-08",
+      "summary": {
+        "es": "Llega también todo lo de la versión anterior: tu primer entreno nada más entrar, recordatorios a tu hora y las notificaciones arregladas. Y como novedad, tus gráficas dejan de duplicar ejercicios.",
+        "en": "This one also brings everything from the previous version: your first workout right after sign-up, reminders at your time and notifications fixed. New here: your charts no longer duplicate exercises."
+      },
+      "highlights": [
+        {
+          "icon": "👋",
+          "type": "feat",
+          "title": {
+            "es": "Cuéntanos cómo llegaste",
+            "en": "Tell us how you found us"
+          },
+          "body": {
+            "es": "En la pantalla de bienvenida puedes decir por dónde conociste la app. Es un toque y se puede saltar.",
+            "en": "On the welcome screen you can tell us where you heard about the app. One tap, and you can skip it."
+          }
+        },
+        {
+          "icon": "📊",
+          "type": "fix",
+          "title": {
+            "es": "Un ejercicio, una sola línea",
+            "en": "One exercise, one row"
+          },
+          "body": {
+            "es": "En las gráficas y en tus estadísticas un mismo ejercicio podía salir dos veces según cómo se hubiera guardado la serie. Ahora se agrupan por el ejercicio real.",
+            "en": "In your charts and stats the same exercise could show up twice depending on how the set was saved. Now they group by the actual exercise."
+          }
+        },
+        {
+          "icon": "📚",
+          "type": "fix",
+          "title": {
+            "es": "Catálogo sin huecos",
+            "en": "No gaps in the catalog"
+          },
+          "body": {
+            "es": "Algunos ejercicios de los programas no tenían ficha en el catálogo y aparecían con su nombre interno. Rellenados.",
+            "en": "Some exercises used by the programs had no catalog entry and showed their internal name. Filled in."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Preguntar «¿cómo conociste la app?» en la bienvenida (#586)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "570e7c0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Fusionar series por identidad resuelta en el servidor (#702) (#703)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "d59a92c"
+            },
+            {
+              "description": "Fusionar series por identidad resuelta y cerrar huecos del catálogo (#692) (#701)",
+              "scope": "catalogo",
+              "breaking": false,
+              "hash": "108acc2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.13.0",
+      "date": "2026-09-03",
+      "summary": {
+        "es": "El onboarding termina con tu primer entreno corto y un recordatorio a tu hora. Además: las notificaciones de seguidores, reacciones y comentarios vuelven a llegar, y los programas se ven en español y con sus cronómetros.",
+        "en": "Onboarding now ends with a short first workout and a reminder at your time. Also: follow, reaction and comment notifications arrive again, and programs show in Spanish with their timers."
+      },
+      "highlights": [
+        {
+          "icon": "🚀",
+          "type": "feat",
+          "title": {
+            "es": "Tu primer entreno, nada más entrar",
+            "en": "Your first workout, right after sign-up"
+          },
+          "body": {
+            "es": "Al terminar el onboarding arrancas una sesión corta de 4 ejercicios en vez de caer en la pantalla de inicio. Al completarla, la app te pregunta si quieres recibir notificaciones.",
+            "en": "When onboarding ends you start a short 4-exercise session instead of landing on the home screen. Once you finish it, the app asks whether you want notifications."
+          }
+        },
+        {
+          "icon": "⏰",
+          "type": "feat",
+          "title": {
+            "es": "Recordatorio desde el primer día",
+            "en": "A reminder from day one"
+          },
+          "body": {
+            "es": "Eliges tus días y tu hora durante el onboarding y la app te avisa a esa hora. Si pasas 24 o 72 horas sin entrenar, recibes un aviso; al tocarlo se abre el entreno de hoy.",
+            "en": "Pick your days and time during onboarding and the app reminds you then. Go 24 or 72 hours without training and you get a nudge; tapping it opens today’s workout."
+          }
+        },
+        {
+          "icon": "🔔",
+          "type": "fix",
+          "title": {
+            "es": "Las notificaciones vuelven a llegar",
+            "en": "Notifications arrive again"
+          },
+          "body": {
+            "es": "Los avisos de nuevos seguidores, reacciones, comentarios, logros y racha no llegaban al móvil. Arreglado en el servidor.",
+            "en": "Alerts for new followers, reactions, comments, achievements and streaks were not reaching the phone. Fixed on the server."
+          }
+        },
+        {
+          "icon": "📋",
+          "type": "fix",
+          "title": {
+            "es": "Programas en español y con cronómetros",
+            "en": "Programs in Spanish, with timers"
+          },
+          "body": {
+            "es": "Algunos ejercicios salían en inglés o con guiones bajos, los ejercicios por tiempo no mostraban su cronómetro y al copiar un programa el nombre quedaba roto. Todo corregido.",
+            "en": "Some exercises showed in English or with underscores, timed exercises had no timer and copying a program broke its name. All fixed."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Activación de día 0 — primer entreno corto y permiso push al acabarlo (#694) (#699)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "bf586d2"
+            },
+            {
+              "description": "Recordatorio en el onboarding, push de inactividad 24/72 h y deep link (#698)",
+              "scope": "notificaciones",
+              "breaking": false,
+              "hash": "9595a23"
+            },
+            {
+              "description": "Cruce OpenPanel↔Sentry — mismo user id en ambos y sentry_event_id en page_error (#688)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "1d5d12f"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Nombres ingleses restantes en los programas y copias «[object Object] (copia)» (#693)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "ff35736"
+            },
+            {
+              "description": "Cronómetros, muscles y nombres en español en los programas, y cliente web sin caché vieja (#691)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "4cfad36"
+            },
+            {
+              "description": "Reparar exercise_name con slug del catálogo en program_exercises (#689)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "875f84d"
+            },
+            {
+              "description": "Nombres de ejercicio en snake_case en sesión y programas (#687)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "df0bead"
+            },
+            {
+              "description": "Triaje Sentry — recortar el caché persistido en vez de descartarlo, y callar ruido (#686)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "0e7a7fd"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.12.3",
+      "date": "2026-08-31",
+      "summary": {
+        "es": "Health Connect ahora solo lee sueño, peso y grasa corporal. Además: el historial de cardio vuelve a verse, los programas oficiales traen sus instrucciones y nutrición ya no pregunta dos veces.",
+        "en": "Health Connect now only reads sleep, weight and body fat. Also: cardio history shows again, official programs come with their instructions and nutrition no longer asks twice."
+      },
+      "highlights": [
+        {
+          "icon": "🔒",
+          "type": "fix",
+          "title": {
+            "es": "Menos datos de salud",
+            "en": "Leaner health access"
+          },
+          "body": {
+            "es": "La app deja de leer pasos y frecuencia cardíaca de Health Connect: solo pide sueño, peso y grasa corporal, todo de solo lectura. La FC de tus entrenos antiguos se conserva.",
+            "en": "The app no longer reads steps or heart rate from Health Connect: it only requests sleep, weight and body fat, all read-only. Heart-rate data from your past workouts is kept."
+          }
+        },
+        {
+          "icon": "🐛",
+          "type": "fix",
+          "title": {
+            "es": "Historial de cardio",
+            "en": "Cardio history"
+          },
+          "body": {
+            "es": "El historial salía en blanco y la lista ocupaba toda la pantalla de Cardio. Arreglado.",
+            "en": "History showed up blank and the list took over the whole Cardio screen. Fixed."
+          }
+        },
+        {
+          "icon": "📋",
+          "type": "fix",
+          "title": {
+            "es": "Programas con instrucciones",
+            "en": "Programs with instructions"
+          },
+          "body": {
+            "es": "Los 15 programas oficiales se revisaron a fondo: ejercicios, dosis e instrucciones que iban vacías ahora están completas.",
+            "en": "The 15 official programs got a deep review: exercises, dosing and previously empty instructions are now complete."
+          }
+        },
+        {
+          "icon": "🥗",
+          "type": "fix",
+          "title": {
+            "es": "Nutrición sin repetir preguntas",
+            "en": "Nutrition without repeat questions"
+          },
+          "body": {
+            "es": "Al configurar tus objetivos de nutrición, lo que ya contaste en el onboarding aparece pre-rellenado.",
+            "en": "When setting up your nutrition goals, what you already answered during onboarding comes pre-filled."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Retos, batallas y carreras para el servidor (#667) (#672)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "94cbc4a"
+            },
+            {
+              "description": "Cuánta gente sigue cada programa (#669) (#671)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "db3916e"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Tercer rechazo de Play — Health Connect a 3 permisos (fuera Steps y HeartRate) (#685)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "b916b7f"
+            },
+            {
+              "description": "El historial salía en blanco, y deja de ocupar toda la pantalla de Cardio (#684)",
+              "scope": "cardio",
+              "breaking": false,
+              "hash": "21b1eec"
+            },
+            {
+              "description": "Dejar de pedir en /nutrition lo que ya dio el onboarding (#676)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "51b9449"
+            },
+            {
+              "description": "Sembrar de verdad las instrucciones, que iban vacías (#677)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "49313de"
+            },
+            {
+              "description": "Auditar y corregir los 15 programas oficiales, con guardarraíl de contenido (#675)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "2fea435"
+            },
+            {
+              "description": "Los filtros de rango perdían el último día sobre columnas TEXT (#674)",
+              "scope": "data",
+              "breaking": false,
+              "hash": "124824d"
+            },
+            {
+              "description": "Los récords iban como texto a un campo numérico (#666) (#670)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "f22a05f"
+            },
+            {
+              "description": "El servidor servía la fase y la dosis equivocadas (#663) (#664)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "1f761c6"
+            },
+            {
+              "description": "La app se quedaba en el splash con una clave de AsyncStorage de +2 MB (#661) (#662)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "ab17f47"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.12.2",
+      "date": "2026-08-27",
+      "summary": {
+        "es": "Arreglo urgente: la 1.12.1 no arrancaba en Android. Incluye todo lo de la 1.12.1 (Health Connect con menos datos, notificación del entreno y Android 16).",
+        "en": "Hotfix: 1.12.1 did not start on Android. Includes everything from 1.12.1 (leaner Health Connect access, workout notification and Android 16)."
+      },
+      "highlights": [
+        {
+          "icon": "🩹",
+          "type": "fix",
+          "title": {
+            "es": "La app vuelve a arrancar",
+            "en": "The app starts again"
+          },
+          "body": {
+            "es": "Una actualización de la librería de fechas dejaba la fecha de hoy inválida en Android y el cálculo de la racha tumbaba la app al abrirla. Se fija la versión buena y la racha ya no puede romper el arranque.",
+            "en": "A date-library update produced an invalid 'today' on Android and the streak calculation crashed the app on launch. The good version is pinned and the streak can no longer break startup."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.12.1",
+      "date": "2026-08-27",
+      "summary": {
+        "es": "Actualización de cumplimiento con Google Play: menos datos de salud, la notificación del entreno con el tipo de servicio correcto y soporte de Android 16.",
+        "en": "Google Play compliance update: fewer health data types, the workout notification on the right service type, and Android 16 support."
+      },
+      "highlights": [
+        {
+          "icon": "🔒",
+          "type": "fix",
+          "title": {
+            "es": "Health Connect pide solo lo que muestra",
+            "en": "Health Connect asks only for what it shows"
+          },
+          "body": {
+            "es": "La app ya no lee calorías activas ni frecuencia cardíaca en reposo. Quedan pasos, frecuencia cardíaca de tus entrenos, sueño, peso y grasa corporal. Si ya estabas conectado, vuelve a conectar desde Reloj y salud para que el diálogo refleje los 5 tipos.",
+            "en": "The app no longer reads active calories or resting heart rate. Steps, workout heart rate, sleep, weight and body fat remain. If you were already connected, reconnect from Watch & health so the dialog reflects the 5 types."
+          }
+        },
+        {
+          "icon": "⏱️",
+          "type": "fix",
+          "title": {
+            "es": "Notificación del entreno y Android 16",
+            "en": "Workout notification and Android 16"
+          },
+          "body": {
+            "es": "El cronómetro del entreno en curso corre ahora como servicio de salud, el tipo que Android reserva para apps de ejercicio, y la app apunta a Android 16.",
+            "en": "The live workout timer now runs as a health service, the type Android reserves for exercise apps, and the app now targets Android 16."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.12.0",
+      "date": "2026-08-26",
+      "summary": {
+        "es": "La versión de los programas de entrenamiento: los creas y los editas de principio a fin, los compartes o los remezclas con crédito al autor, y la app te dice en qué semana vas y cuántas repeticiones tocan hoy.",
+        "en": "The training-programs release: build and edit them end to end, share or remix them with credit to the author, and the app tells you which week you are on and how many reps you owe today. Training stats also land, and circuit days finally work."
+      },
+      "highlights": [
+        {
+          "icon": "🏋️",
+          "type": "feat",
+          "title": {
+            "es": "Crea y edita programas completos desde el móvil",
+            "en": "Build and edit full programs from your phone"
+          },
+          "body": {
+            "es": "El editor cubre el programa entero: fases, días, ejercicios y sus campos de catálogo, con validación en los pasos 3 y 4 para que no publiques un programa a medias. Puedes copiar un día o una fase entera, subir la portada y una imagen o vídeo por ejercicio, y desde la ficha editar, duplicar, abandonar o borrar el programa.",
+            "en": "The editor covers the whole program: phases, days, exercises and their catalog fields, with validation on steps 3 and 4 so you never publish a half-finished program. You can copy a day or an entire phase, upload the cover and an image or video per exercise, and from the program page edit, duplicate, leave or delete it."
+          }
+        },
+        {
+          "icon": "📈",
+          "type": "feat",
+          "title": {
+            "es": "Progresión automática: la app te dice cuánto toca hoy",
+            "en": "Auto progression: the app tells you what to do today"
+          },
+          "body": {
+            "es": "Cada ejercicio del programa mira lo que hiciste la última vez y te sugiere las repeticiones o los segundos de hoy. Cuando te quedas corto con una variante, te propone la siguiente para seguir subiendo sin tener que llevar la cuenta tú.",
+            "en": "Each program exercise looks at what you did last time and suggests today’s reps or seconds. When a variation gets too easy it proposes the next one, so you keep progressing without tracking it yourself."
+          }
+        },
+        {
+          "icon": "🧭",
+          "type": "feat",
+          "title": {
+            "es": "Sabes en qué semana vas y en qué fase estás",
+            "en": "You always know which week and phase you are on"
+          },
+          "body": {
+            "es": "El programa muestra «semana X de Y» y cambia de fase solo según avanzas, sin que tengas que tocar ningún ajuste. El progreso se calcula de lo que realmente has entrenado.",
+            "en": "The program shows “week X of Y” and moves to the next phase on its own as you advance, with no setting to touch. Progress is computed from what you actually trained."
+          }
+        },
+        {
+          "icon": "🔗",
+          "type": "feat",
+          "title": {
+            "es": "Comparte tus programas y remezcla los de otros",
+            "en": "Share your programs and remix other people’s"
+          },
+          "body": {
+            "es": "Cada programa elige si es privado, accesible con enlace o público, y el enlace abre una página que se ve sin cuenta. Si partes del programa de alguien, la copia lleva el crédito «basado en X de @autor» y cada programa enseña cuánta gente lo sigue.",
+            "en": "Every program picks whether it is private, link-only or public, and the link opens a page anyone can see without an account. If you start from someone else’s program, your copy carries a “based on X by @author” credit, and each program shows how many people follow it."
+          }
+        },
+        {
+          "icon": "📊",
+          "type": "feat",
+          "title": {
+            "es": "Estadísticas de entrenamiento",
+            "en": "Training stats"
+          },
+          "body": {
+            "es": "Una vista nueva con los músculos que más trabajas, tus ejercicios más frecuentes, tus récords personales y la tendencia de las últimas semanas.",
+            "en": "A new view with the muscles you train most, your most frequent exercises, your personal records and the trend over recent weeks."
+          }
+        },
+        {
+          "icon": "🔁",
+          "type": "fix",
+          "title": {
+            "es": "Los días de circuito por fin funcionan",
+            "en": "Circuit days finally work"
+          },
+          "body": {
+            "es": "Un día de tipo circuito arranca un circuito de verdad y, al terminarlo, marca el día como hecho y cuenta para el hito del programa — antes se quedaba bloqueado para siempre. Además, si el autor borra un programa al que estabas inscrito, ahora te avisamos en vez de dejarte con una inscripción muerta.",
+            "en": "A circuit day now starts an actual circuit and, once finished, marks the day done and counts toward the program milestone — before it stayed blocked forever. And if the author deletes a program you were enrolled in, we now tell you instead of leaving you with a dead enrollment."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Progresión automática — sugerir reps/segundos y la siguiente variante (#617) (#653)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "5ee8e43"
+            },
+            {
+              "description": "Estadísticas de entrenamiento (músculos, ejercicios, récords, tendencia) (#597)",
+              "scope": null,
+              "breaking": false,
+              "hash": "070e5d5"
+            },
+            {
+              "description": "Editar, duplicar, abandonar, borrar y portada del programa (#611, #612) (#631)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "90dcad4"
+            },
+            {
+              "description": "Valida los pasos 3 y 4 del editor de programas (#610) (#630)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "b56c035"
+            },
+            {
+              "description": "El embudo de entreno completo, paridad web↔móvil y las superficies mudas (#636) (#652)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "166e852"
+            },
+            {
+              "description": "Avisar al inscrito cuando su programa es eliminado (#633) (#643)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "f3529a5"
+            },
+            {
+              "description": "Copiar día/fase en el editor y arrastrar ejercicios en web (#621) (#651)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "41aad55"
+            },
+            {
+              "description": "Remix con crédito («basado en X de @autor») y contador «N personas lo siguen» (#620) (#650)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "00dd15b"
+            },
+            {
+              "description": "Subir portada e imágenes/vídeo por ejercicio desde el editor (#618) (#642)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "845037e"
+            },
+            {
+              "description": "El editor expone los campos de catálogo del «PARA TI» (#613) (#638)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "12103dd"
+            },
+            {
+              "description": "Landing pública de /shared/:id vía pb_hooks (#604) (#637)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "91a96cc"
+            },
+            {
+              "description": "Visibilidad privado / con enlace / público (#603) (#635)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "c0567bc"
+            },
+            {
+              "description": "Progreso dentro del programa — semana X de Y y fase automática (#616) (#629)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "61752d9"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Las releases de Sentry de la web no servían para nada (#655)",
+              "scope": "ci,web",
+              "breaking": false,
+              "hash": "c754ebc"
+            },
+            {
+              "description": "Un idioma POSIX del navegador tumbaba el dashboard (#654)",
+              "scope": "core,web",
+              "breaking": false,
+              "hash": "7f90759"
+            },
+            {
+              "description": "Borrar un programa cierra las inscripciones de todos (#605) (#632)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "948d2c2"
+            },
+            {
+              "description": "Los eventos de carrera se duplicaban y el embudo de entreno no se podía medir (#636) (#649)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "768f7d9"
+            },
+            {
+              "description": "Un circuito de programa marca el día hecho y cuenta para el hito (#640) (#648)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "2a94fba"
+            },
+            {
+              "description": "Una foto que el navegador no sabe leer colgaba el análisis de comida (#646)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "caca9c7"
+            },
+            {
+              "description": "El caché persistido viejo tumbaba el dashboard (#644)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "1a5c285"
+            },
+            {
+              "description": "Un día de tipo circuit arranca un circuito de verdad (#625) (#639)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "2241cdb"
+            },
+            {
+              "description": "Los dos pickers de ejercicios consumen el catálogo de core (#609) (#634)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "7722823"
+            },
+            {
+              "description": "Las miniaturas de ejercicio pasan por el resolutor de media (#628)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "8bca4df"
+            },
+            {
+              "description": "Comentarios con avatar y fecha real en el sheet nativo (#598)",
+              "scope": "social",
+              "breaking": false,
+              "hash": "5f1b443"
+            },
+            {
+              "description": "Normaliza priority al enum y rellena section en program_exercises (#626)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "eb8b423"
+            },
+            {
+              "description": "Clave de caché propia para useProgramDetail (#606) (#627)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "a5e9a44"
+            },
+            {
+              "description": "Campos de circuito en program_day_config (#601)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "949a01e"
+            },
+            {
+              "description": "Guardas de is_official/is_featured/created_by en las API rules (#623)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "ff057e8"
+            },
+            {
+              "description": "Duplicar un programa conserva el nombre i18n (#622)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "a9e8d1f"
+            },
+            {
+              "description": "Reintentar el 504 del historial y dejar de pintarlo como vacío (#595)",
+              "scope": "cardio",
+              "breaking": false,
+              "hash": "6392ae1"
+            }
+          ]
+        },
+        {
+          "label": "Rendimiento",
+          "emoji": "⚡",
+          "type": "perf",
+          "items": [
+            {
+              "description": "El catálogo y el detalle sin topes, duplicar en un batch (#614) (#641)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "adfe12a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.11.1",
+      "date": "2026-08-23",
+      "summary": {
+        "es": "El historial de cardio estrena filtros por tipo, abre el detalle desde la propia fila y trae buscador de competencias. Además, la app ahora solo pide a Health Connect los datos que de verdad usa.",
+        "en": "The cardio history gets filters by type, opens the detail straight from the row and adds a competition search. The app also now asks Health Connect only for the data it actually uses."
+      },
+      "highlights": [
+        {
+          "icon": "🏃",
+          "type": "feat",
+          "title": {
+            "es": "Historial de cardio con filtros y detalle directo",
+            "en": "Cardio history with filters and direct detail"
+          },
+          "body": {
+            "es": "Puedes filtrar el historial por tipo de sesión y abrir el detalle tocando la fila, sin pasos intermedios. Se añade además un buscador para encontrar competencias.",
+            "en": "You can filter the history by session type and open the detail by tapping the row, with no extra steps. A search box for finding competitions is also included."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "fix",
+          "title": {
+            "es": "Health Connect pide menos datos tuyos",
+            "en": "Health Connect asks for less of your data"
+          },
+          "body": {
+            "es": "La app pedía doce tipos de datos de salud y varios no se usaban para nada. Ahora solo pide siete, todos con una pantalla que te los enseña: pasos, calorías activas, frecuencia cardíaca, FC en reposo, sueño, peso y grasa corporal. Como contrapartida, desaparecen las métricas de VFC y VO₂ máx de «Reloj y salud». Si ya tenías el reloj conectado, revoca y vuelve a conceder los permisos en Health Connect para que se aplique el recorte.",
+            "en": "The app used to request twelve health data types and several went unused. It now requests only seven, each with a screen that shows it to you: steps, active calories, heart rate, resting HR, sleep, weight and body fat. As a trade-off, the HRV and VO₂ max metrics are gone from “Watch & health”. If your watch was already connected, revoke and re-grant the permissions in Health Connect for the change to apply."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Publicar en Google Play desde local con la API de Play (#591)",
+              "scope": "release",
+              "breaking": false,
+              "hash": "4d70d7f"
+            },
+            {
+              "description": "Filtros en el historial, detalle desde la fila y buscador de competencias (#592)",
+              "scope": "cardio",
+              "breaking": false,
+              "hash": "8e719bc"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Recortar permisos de Health Connect al mínimo declarado (#593)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "1c5d89a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.11.0",
+      "date": "2026-08-23",
+      "summary": {
+        "es": "El muro cuenta ahora todo lo que haces —sesiones libres, cardio, circuitos, retos, carreras y batallas—, el perfil estrena carné de atleta con tus cifras y tus marcas, y puedes poner tu cuenta en privado y aprobar quién te sigue.",
+        "en": "The feed now covers everything you do — free sessions, cardio, circuits, challenges, races and battles — your profile gets an athlete card with your numbers and personal bests, and you can make your account private and approve who follows you."
+      },
+      "highlights": [
+        {
+          "icon": "📰",
+          "type": "feat",
+          "title": {
+            "es": "El muro cuenta toda tu actividad",
+            "en": "The feed covers all your activity"
+          },
+          "body": {
+            "es": "Hasta ahora el muro solo enseñaba entrenos de programa, y las sesiones libres salían sin título. Ahora aparecen seis tipos de actividad: sesión de programa, sesión libre, cardio, circuito, reto, carrera y batalla. De paso, al bajar por el muro ya no se repiten publicaciones.",
+            "en": "Until now the feed only showed program workouts, and free sessions appeared with no title. It now covers six kinds of activity: program session, free session, cardio, circuit, challenge, race and battle. Scrolling down no longer repeats posts either."
+          }
+        },
+        {
+          "icon": "🪪",
+          "type": "feat",
+          "title": {
+            "es": "Perfil con carné de atleta",
+            "en": "Profile with an athlete card"
+          },
+          "body": {
+            "es": "El perfil empieza por lo tuyo: nivel, semana del programa, tus cifras y tus skills. Los ajustes bajan al final, en una lista con una fila por tema que se despliega ahí mismo para editar sin cambiar de pantalla.",
+            "en": "Your profile now leads with you: level, program week, your numbers and your skills. Settings move to the bottom as a list with one row per topic that unfolds in place, so you edit without leaving the screen."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "feat",
+          "title": {
+            "es": "Cuentas privadas con aprobación",
+            "en": "Private accounts with approval"
+          },
+          "body": {
+            "es": "Activa «Cuenta privada» y quien quiera seguirte tendrá que solicitarlo: apruebas o rechazas desde notificaciones. El botón pasa a SOLICITAR / SOLICITADO, los perfiles privados muestran un candado en vez de ceros, y en los rankings de retos las cuentas privadas se ocultan a los demás sin descuadrar el número de participantes.",
+            "en": "Turn on \"Private account\" and anyone who wants to follow you has to ask: you approve or decline from notifications. The button becomes REQUEST / REQUESTED, private profiles show a lock instead of zeros, and in challenge leaderboards private accounts are hidden from others without throwing off the participant count."
+          }
+        },
+        {
+          "icon": "🔗",
+          "type": "fix",
+          "title": {
+            "es": "Compartir una sesión y verla entera",
+            "en": "Sharing a session, and seeing all of it"
+          },
+          "body": {
+            "es": "El enlace para compartir una sesión le enseñaba a quien lo recibía su propio progreso, no el tuyo: arreglado. Y el detalle de una sesión sin series ya lista los ejercicios cronometrados en vez de decir solo «sin series registradas».",
+            "en": "The link you share for a session used to show the person opening it their own progress instead of yours — fixed. And a session with no sets now lists its timed exercises instead of just saying \"no sets recorded\"."
+          }
+        },
+        {
+          "icon": "📊",
+          "type": "fix",
+          "title": {
+            "es": "El ranking deja de recargarse solo",
+            "en": "The leaderboard stops reloading itself"
+          },
+          "body": {
+            "es": "La pantalla de ranking se recargaba una y otra vez en segundo plano, gastando datos y batería. Ahora carga una vez, y las estadísticas de uso reflejan lo que de verdad haces.",
+            "en": "The leaderboard screen kept reloading itself in the background, burning data and battery. It now loads once, and usage stats reflect what you actually do."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "El muro cuenta toda la actividad, no solo entrenos (#588)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "796cf12"
+            },
+            {
+              "description": "Carné de atleta en web y móvil (canvas 1d) (#587)",
+              "scope": "profile",
+              "breaking": false,
+              "hash": "6ee458f"
+            },
+            {
+              "description": "UI de cuentas privadas con aprobación (#422) (#584)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "bcbac48"
+            },
+            {
+              "description": "Redesign profile experience (#585)",
+              "scope": "profile",
+              "breaking": false,
+              "hash": "12a6bb0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Analytics fiable en leaderboard y selección de programa (#578, #579) (#583)",
+              "scope": "core,web",
+              "breaking": false,
+              "hash": "4e69a24"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.10.2",
+      "date": "2026-08-22",
+      "summary": {
+        "es": "Los programas oficiales vuelven a tener sus días de entrenamiento: la semana ya no aparece como solo descanso. Además, mejoras internas de estabilidad.",
+        "en": "Official programs show their training days again: the week no longer looks like rest only. Plus internal stability improvements."
+      },
+      "highlights": [
+        {
+          "icon": "📅",
+          "type": "fix",
+          "title": {
+            "es": "Los programas vuelven a tener semana",
+            "en": "Programs have their week back"
+          },
+          "body": {
+            "es": "Doce de los programas oficiales se mostraban con la semana vacía (solo sábado y domingo de descanso) y no había nada que entrenar. Ya tienen sus días de lunes a sábado con su tipo de entreno, y si alguno quedara por corregir, la app lo arregla sola al cargarlo.",
+            "en": "Twelve official programs showed an empty week (only Saturday and Sunday as rest) with nothing to train. They now have their Monday-to-Saturday days with the right workout type, and if any is still off, the app fixes it on load."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Los programas oficiales muestran sus días de entrenamiento (#575)",
+              "scope": "programs",
+              "breaking": false,
+              "hash": "a18f337"
+            },
+            {
+              "description": "Mejoras internas de estabilidad y diagnóstico (#580)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "b2e547e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.10.1",
+      "date": "2026-08-21",
+      "summary": {
+        "es": "Widgets en la pantalla de inicio para la racha, las comidas, el agua y tu próxima sesión; cuentas privadas con aprobación de seguidores; resultados de batalla con revancha y tarjeta para compartir; y un buen puñado de arreglos en cardio y en el guardado sin conexión.",
+        "en": "Home-screen widgets for your streak, meals, water and next session; private accounts with follower approval; battle results with rematch and a share card; and a solid batch of fixes to cardio and offline saving."
+      },
+      "highlights": [
+        {
+          "icon": "📱",
+          "type": "feat",
+          "title": {
+            "es": "Widgets en la pantalla de inicio",
+            "en": "Home-screen widgets"
+          },
+          "body": {
+            "es": "Añade a tu pantalla de inicio la racha (también en formato 2x2, ahora con la racha real), la racha de comidas, el agua que llevas y tu próxima sesión. El widget de hoy muestra más información de un vistazo.",
+            "en": "Add your streak (also as a 2x2, now showing the real current streak), your meal streak, today's water and your next session to your home screen. The Today widget shows more at a glance."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "feat",
+          "title": {
+            "es": "Cuentas privadas",
+            "en": "Private accounts"
+          },
+          "body": {
+            "es": "Puedes hacer tu cuenta privada: quien quiera seguirte tendrá que pedírtelo y tú apruebas o rechazas. El servidor es quien decide qué se muestra, así que tus entrenos no salen en el muro ni en los rankings de quien no apruebes.",
+            "en": "You can now make your account private: anyone who wants to follow you has to ask, and you approve or decline. The server decides what is visible, so your workouts stay out of the feed and leaderboards of anyone you haven't approved."
+          }
+        },
+        {
+          "icon": "⚔️",
+          "type": "feat",
+          "title": {
+            "es": "Batallas: resultados, revancha y tarjeta",
+            "en": "Battles: results, rematch and share card"
+          },
+          "body": {
+            "es": "Al acabar una batalla ves un resumen con el puesto de cada uno, puedes pedir revancha con un toque y compartir la tarjeta del resultado. Los empates se muestran como tal en el marcador, la espera y el historial, y el trabajo por tiempo aparece en el marcador.",
+            "en": "When a battle ends you get a results screen with everyone's placing, a one-tap rematch and a share card. Ties now show as ties on the scoreboard, the waiting room and history, and timed work shows up on the scoreboard."
+          }
+        },
+        {
+          "icon": "🏆",
+          "type": "feat",
+          "title": {
+            "es": "Retos: Push-up Builder y detalle renovado",
+            "en": "Challenges: Push-up Builder and a new detail view"
+          },
+          "body": {
+            "es": "Nuevo reto listo para unirse, Push-up Builder, con puntuación acumulada. El detalle del reto tiene ahora dos vistas, meta y ranking, y los retos caducados se cierran solos en el servidor en vez de quedarse abiertos.",
+            "en": "A new ready-made challenge, Push-up Builder, with cumulative scoring. The challenge detail now has two views, goal and ranking, and expired challenges are closed automatically on the server instead of lingering open."
+          }
+        },
+        {
+          "icon": "🖼️",
+          "type": "feat",
+          "title": {
+            "es": "Foto de perfil desde la app",
+            "en": "Profile photo from the app"
+          },
+          "body": {
+            "es": "Cambia tu foto de perfil directamente desde el móvil, sin pasar por la web.",
+            "en": "Change your profile photo right from your phone, no need to go through the web."
+          }
+        },
+        {
+          "icon": "📶",
+          "type": "fix",
+          "title": {
+            "es": "Guardado sin conexión más fiable",
+            "en": "More reliable offline saving"
+          },
+          "body": {
+            "es": "Las series, las sesiones y los circuitos que no pueden guardarse por falta de cobertura se encolan y se reintentan solos cuando vuelve la conexión.",
+            "en": "Sets, sessions and circuits that can't be saved without signal are queued and retried on their own once you're back online."
+          }
+        },
+        {
+          "icon": "🏃",
+          "type": "fix",
+          "title": {
+            "es": "Cardio: historial y sesiones accidentales",
+            "en": "Cardio: history and accidental sessions"
+          },
+          "body": {
+            "es": "El historial de cardio y otras listas podían aparecer vacías al entrar: arreglado. Si paras una sesión de cardio a los pocos segundos se descarta en vez de guardarse como un entreno de 0 metros, y los textos en inglés que se colaban en cardio y carreras están traducidos.",
+            "en": "The cardio history and some other lists could show up empty on open — fixed. Stopping a cardio session after a few seconds now discards it instead of saving a 0-metre workout, and the stray English text in cardio and races is translated."
+          }
+        },
+        {
+          "icon": "🎨",
+          "type": "fix",
+          "title": {
+            "es": "Pequeños arreglos",
+            "en": "Small fixes"
+          },
+          "body": {
+            "es": "El texto sobre el color lima se lee bien en modo claro, los chevrones plegables giran como deben, las notificaciones push siguen llegando al cambiar de cuenta en el mismo móvil y guardar un programa ya no borra y recrea sus días.",
+            "en": "Text on the lime colour is readable in light mode, collapsible chevrons rotate properly, push notifications keep arriving after switching accounts on the same phone, and saving a program no longer deletes and recreates its days."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Widgets de racha de comidas, agua y próxima sesión (#230) (#551)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "585d4c9"
+            },
+            {
+              "description": "Widget de racha 2x2, racha actual real y TodayWidget más completo (closes #229) (#533)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "03138e8"
+            },
+            {
+              "description": "Cerrar los retos caducados en el servidor con un cron (closes #515) (#529)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "b4d1a2c"
+            },
+            {
+              "description": "Version gate, telemetría de versiones y política de esquema (#509)",
+              "scope": "platform",
+              "breaking": false,
+              "hash": "a8ae6ef"
+            },
+            {
+              "description": "Cuentas privadas con aprobación en el servidor (refs #422) (#505)",
+              "scope": "privacy",
+              "breaking": false,
+              "hash": "b761486"
+            },
+            {
+              "description": "Activar el preset Push-up Builder con puntuación acumulada (refs #345) (#446)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "4fffa71"
+            },
+            {
+              "description": "Battle results, rematch, share card and analytics (#443)",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "a5aa7c8"
+            },
+            {
+              "description": "Ramificar el detalle en dos layouts, meta y ranking (#383) (#431)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "0293bf8"
+            },
+            {
+              "description": "Subir la foto de perfil desde la app (#434)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "880e2f0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Deduplicar shiki quitando la dependencia directa huérfana (#558) (#570)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "ebefa2e"
+            },
+            {
+              "description": "Renderizar la UI de herramientas del chat de IA con las tool parts del AI SDK v7 (#557) (#569)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "7becad8"
+            },
+            {
+              "description": "Descartar sesiones de cardio accidentales en vez de guardarlas (#562) (#567)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "61377d7"
+            },
+            {
+              "description": "RequestKey en las lecturas concurrentes que se auto-cancelaban (#565) (#566)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "79c07c6"
+            },
+            {
+              "description": "RequestKey en las consultas de cardio_sessions que se auto-cancelaban (#559) (#564)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "1155cfd"
+            },
+            {
+              "description": "Traducir los valores en inglés del locale es en cardio y carreras (#560) (#563)",
+              "scope": "core,web",
+              "breaking": false,
+              "hash": "7d297dc"
+            },
+            {
+              "description": "--lime-foreground casi-negro en modo claro para cumplir AA (closes #548) (#549)",
+              "scope": "web,mobile",
+              "breaking": false,
+              "hash": "841ed7e"
+            },
+            {
+              "description": "Reportar a Sentry el fallo del reintento del push de carrera (closes #545) (#546)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "c2382ed"
+            },
+            {
+              "description": "Pasar requestKey: null en las escrituras paralelas de PocketBase (closes #536) (#537)",
+              "scope": "core,web",
+              "breaking": false,
+              "hash": "8251082"
+            },
+            {
+              "description": "Los temporizadores de sesión sobre usePausableCountdown (#469) (#516)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "058b9be"
+            },
+            {
+              "description": "Unificar catálogo de ejercicios y recuperar difficulty (closes #474) (#527)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "23d60aa"
+            },
+            {
+              "description": "Usar processCardioFix() de core en el cardio web (closes #467) (#522)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "bf37d00"
+            },
+            {
+              "description": "Ocultar restos de depuración en cardio/carreras (closes #454) (#519)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "cb7d123"
+            },
+            {
+              "description": "Mover session-machine a core y unificar buildSteps, sets: 0 → 0 pasos (#452) (#520)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "dd61ab2"
+            },
+            {
+              "description": "Registrar en USER_SCOPED_STORAGE_KEYS las 7 claves de sesión activa/colas (#456) (#521)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "7446e7e"
+            },
+            {
+              "description": "Cortar el bucle infinito de refetch del auto-cierre (closes #451) (#511)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "731d9d5"
+            },
+            {
+              "description": "Derivar empates con battleDisplayRanks en marcador, espera e historial (closes #453) (#510)",
+              "scope": "battle",
+              "breaking": false,
+              "hash": "3f4db14"
+            },
+            {
+              "description": "Encadenar e.next() en referral_side_effects + guardarrail estatico (closes #457) (#508)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "de37fb7"
+            },
+            {
+              "description": "Restaurar los emoji de medalla en el ranking (refs #455) (#507)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "c3d4ca0"
+            },
+            {
+              "description": "Pasar actorId en los pushes de batalla y no filtrar el email (closes #458) (#506)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "b749c43"
+            },
+            {
+              "description": "Usar la cola offline de core para las sesiones de circuito (#464) (#493)",
+              "scope": "circuit",
+              "breaking": false,
+              "hash": "9134626"
+            },
+            {
+              "description": "Notificar circuit_sessions (#459) (#490)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "5459000"
+            },
+            {
+              "description": "Reconciliar el guardado del editor de programas en vez de borrar y recrear (#463) (#494)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "ed46e0a"
+            },
+            {
+              "description": "Reutilizar cálculo canónico de macros (#460) (#491)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "64f3df4"
+            },
+            {
+              "description": "Vincular parámetros en los filtros de PocketBase (#461) (#492)",
+              "scope": "security",
+              "breaking": false,
+              "hash": "f4ee39c"
+            },
+            {
+              "description": "Cerrar la fuga de la suscripción realtime y estabilizar la key de useProgress (#462) (#489)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "d0283d0"
+            },
+            {
+              "description": "Añadir las claves que se pintaban en crudo y un guardarraíl código→locales (closes #444) (#445)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "91c0b1e"
+            },
+            {
+              "description": "Reintentar las series y las sesiones por la cola offline (closes #301) (#441)",
+              "scope": "offline",
+              "breaking": false,
+              "hash": "01b1712"
+            },
+            {
+              "description": "Que los chevrons plegables se vean al girarlos (#435) (#436)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "ec1d9f6"
+            },
+            {
+              "description": "Mostrar el trabajo por tiempo en el marcador de una batalla (#426) (#429)",
+              "scope": "battle",
+              "breaking": false,
+              "hash": "8ad68c7"
+            },
+            {
+              "description": "Separar la etiqueta de despertares del sufijo con número (#420) (#430)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "503e178"
+            },
+            {
+              "description": "Reasignar el token cuando el dispositivo cambia de cuenta (#428)",
+              "scope": "push",
+              "breaking": false,
+              "hash": "3ec0f96"
+            }
+          ]
+        },
+        {
+          "label": "Mejoras internas",
+          "emoji": "♻️",
+          "type": "refactor",
+          "items": [
+            {
+              "description": "RelativeTime() local ×3 → timeAgoShort de core (#468) (#571)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "3367cbb"
+            },
+            {
+              "description": "Composición de ui/ — variantes de Button, primitivos y React 19 (#488) (#547)",
+              "scope": "web,mobile",
+              "breaking": false,
+              "hash": "080481e"
+            },
+            {
+              "description": "MoveExercise → moveItem y EmojiPicker a core (#468) (#550)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "1c6ac4b"
+            },
+            {
+              "description": "Un solo índice del catálogo y carga perezosa en web (closes #486) (#541)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "8271f04"
+            },
+            {
+              "description": "Lifecycle en CorePlatform y 3 contextos de sesión a core (closes #482) (#544)",
+              "scope": "core,web,mobile",
+              "breaking": false,
+              "hash": "db2042a"
+            },
+            {
+              "description": "Rendimiento de listas, reloj de circuito y tipado de health (#487) (#542)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "351a038"
+            },
+            {
+              "description": "SessionView nativo sobre el reducer de core (#475) (#539)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "5448005"
+            },
+            {
+              "description": "Reducer de sesión en core y SessionView web descompuesto (#475) (#538)",
+              "scope": "core,web",
+              "breaking": false,
+              "hash": "d167697"
+            },
+            {
+              "description": "Partir ProgramEditorPage en pasos y el perfil en hook + reducer (closes #478) (#535)",
+              "scope": "web,mobile",
+              "breaking": false,
+              "hash": "c0d3cbb"
+            },
+            {
+              "description": "Restos del #479 — panel de stats de cardio, andamiaje de las share cards y AuthUser (#534)",
+              "scope": "web,core",
+              "breaking": false,
+              "hash": "8c36935"
+            },
+            {
+              "description": "Partir CardioSessionContext y RaceContext en hooks, un solo fin de carrera (closes #479) (#532)",
+              "scope": "web,mobile",
+              "breaking": false,
+              "hash": "d6a3607"
+            },
+            {
+              "description": "Partir MealLoggerContent y sacar el canvas de DailySummaryCard (closes #477) (#530)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "b1356e0"
+            },
+            {
+              "description": "Extracciones mecánicas de duplicados web/móvil a core (refs #468) (#526)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "9820b41"
+            },
+            {
+              "description": "Exportar RANK_MEDALS y unificar las medallas del ranking (closes #455) (#525)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "c56a0a4"
+            },
+            {
+              "description": "Fetch inline de páginas web/móvil a hooks de core (closes #473) (#528)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "822aa97"
+            },
+            {
+              "description": "Capa de datos repos/, runStructuredGeneration e insight context en core (closes #480) (#517)",
+              "scope": "mcp-server",
+              "breaking": false,
+              "hash": "aa1e66a"
+            },
+            {
+              "description": "Unificar recordatorios en useReminderTimeline (closes #471) (#523)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "724ce59"
+            },
+            {
+              "description": "Partir useProgress en lectura/mutaciones/PRs + lib pura (#476) (#524)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "0fc8933"
+            },
+            {
+              "description": "Partir battles.js en módulos, push en lote y snapshot sin N+1 (#481) (#518)",
+              "scope": "pb_hooks",
+              "breaking": false,
+              "hash": "9bad7ac"
+            },
+            {
+              "description": "Nutrición sobre hooks de core, sin I/O de PB inline (closes #470) (#514)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "ae4aeba"
+            },
+            {
+              "description": "Mover lib/race/{raceApi,raceRealtime,errors} a @calistenia/core (#466) (#512)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "4c956da"
+            },
+            {
+              "description": "Unificar el guardado del onboarding en useOnboardingSubmit (#472) (#513)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "94e0b8b"
+            },
+            {
+              "description": "Migrar mcp-use v1.34.6 → v2.2.3 (widgets → Views) (closes #442) (#447)",
+              "scope": "mcp-server",
+              "breaking": false,
+              "hash": "2bbff25"
+            },
+            {
+              "description": "Compilar prompts de Langfuse con variables (#298)",
+              "scope": "ai",
+              "breaking": false,
+              "hash": "1323536"
+            },
+            {
+              "description": "Titular el puesto en la pantalla de espera (#432) (#433)",
+              "scope": "battle",
+              "breaking": false,
+              "hash": "39afc55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.9.0",
+      "date": "2026-08-14",
+      "summary": {
+        "es": "Programas de comunidad con hitos semanales para seguir un plan de verdad, estadísticas de perfil que por fin cuentan todos tus entrenos, y las batallas con la misma pantalla de entreno que una sesión normal.",
+        "en": "Community programs with weekly milestones so you can follow a real plan, profile stats that finally count every workout you do, and battles that now use the same training screen as a regular session."
+      },
+      "highlights": [
+        {
+          "icon": "🗓️",
+          "type": "feat",
+          "title": {
+            "es": "Programas de comunidad",
+            "en": "Community programs"
+          },
+          "body": {
+            "es": "Apúntate a «30 días de calistenia» y sigue un plan con hitos semanales. Tu semana 1 empieza el día en que te apuntas, no hay que esperar a ningún lunes, y el progreso se calcula solo a partir de lo que entrenas: si editas o borras una sesión, el hito se corrige solo. Puedes dejarlo y volver sin perder por dónde ibas.",
+            "en": "Join \"30 days of calisthenics\" and follow a plan with weekly milestones. Your week 1 starts the day you join — no waiting for a Monday — and progress is worked out from what you actually train: edit or delete a session and the milestone corrects itself. You can leave and come back without losing your place."
+          }
+        },
+        {
+          "icon": "📊",
+          "type": "fix",
+          "title": {
+            "es": "Tus estadísticas vuelven a contar",
+            "en": "Your stats count again"
+          },
+          "body": {
+            "es": "Tu perfil y la Clasificación enseñaban 0 sesiones y 0 racha si entrenabas con sesiones de fuerza, aunque el calendario de esa misma pantalla sí tuviera datos. Ahora los tres tipos de sesión —fuerza, circuito y cardio— suman en el total y en la racha.",
+            "en": "Your profile and the Leaderboard showed 0 sessions and a 0-day streak if you trained with strength sessions, even when the calendar on that same screen had your data. All three session types — strength, circuit and cardio — now count towards your total and your streak."
+          }
+        },
+        {
+          "icon": "⚔️",
+          "type": "feat",
+          "title": {
+            "es": "Batallas con la pantalla de entreno de verdad",
+            "en": "Battles with the real training screen"
+          },
+          "body": {
+            "es": "Las batallas de circuito ya usan el mismo descanso y el mismo temporizador que una sesión normal, con sus avisos y sus vibraciones, en vez de una pantalla aparte a medias. Además, a quien has bloqueado ya no puede entrar en tu batalla ni ver el marcador en vivo.",
+            "en": "Circuit battles now use the same rest screen and timer as a regular session, with the same cues and haptics, instead of a half-built screen of their own. On top of that, anyone you have blocked can no longer join your battle or watch the live scoreboard."
+          }
+        },
+        {
+          "icon": "🏃",
+          "type": "feat",
+          "title": {
+            "es": "Tu recorrido en la tarjeta de resultados",
+            "en": "Your route on the results card"
+          },
+          "body": {
+            "es": "Al terminar una carrera, la tarjeta de resultados dibuja el recorrido que hiciste. Y si le das a guardar antes de que la ruta haya cargado, ya no se guarda el entreno sin ella.",
+            "en": "When you finish a race, the results card now draws the route you ran. And if you hit save before the route has loaded, the workout is no longer saved without it."
+          }
+        },
+        {
+          "icon": "🎯",
+          "type": "feat",
+          "title": {
+            "es": "Crear y seguir retos, más simple",
+            "en": "Creating and following challenges, simpler"
+          },
+          "body": {
+            "es": "El selector de métricas enseña las 4 de siempre y esconde el resto tras «Más métricas», así que crear un reto ya no es una pared de opciones. Las fechas del reto se ven como fechas y no como horas sueltas, el estado vacío ya no te saca al navegador, y los retos express funcionan de punta a punta.",
+            "en": "The metric picker shows the four common ones and tucks the rest behind \"More metrics\", so creating a challenge is no longer a wall of options. Challenge dates read as dates instead of stray times, the empty state no longer kicks you out to the browser, and express challenges work end to end."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "feat",
+          "title": {
+            "es": "Un poco más de privacidad",
+            "en": "A bit more privacy"
+          },
+          "body": {
+            "es": "El recorrido GPS de tus carreras pasa a ser solo tuyo: el resto ve tu posición y tu resultado, pero no por dónde has ido. Y los datos privados de tu cuenta dejan de viajar a otras personas cuando aparecen tu nombre y tu foto en un muro o un ranking.",
+            "en": "The GPS track of your races is now yours alone: other people see your position and your result, but not the streets you ran. And your account’s private data no longer travels to other people when your name and photo show up on a wall or a leaderboard."
+          }
+        },
+        {
+          "icon": "🎁",
+          "type": "feat",
+          "title": {
+            "es": "Referidos: estado y recompensa a la vista",
+            "en": "Referrals: status and reward in plain sight"
+          },
+          "body": {
+            "es": "Ahora puedes ver a quién has invitado, en qué estado está cada invitación y qué recompensa te toca, tanto en la app como en la web.",
+            "en": "You can now see who you invited, what state each invitation is in and which reward you have earned, both in the app and on the web."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Programas de comunidad con hitos semanales (#353) (#425)",
+              "scope": "community-programs",
+              "breaking": false,
+              "hash": "cd9a4ff"
+            },
+            {
+              "description": "Agrupar el selector de métricas tras \"Más métricas\" (#384) (#423)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "dd430c2"
+            },
+            {
+              "description": "Dibujar el recorrido propio en la tarjeta de resultados",
+              "scope": "race",
+              "breaking": false,
+              "hash": "18d7702"
+            },
+            {
+              "description": "Referral status and reward visibility on web + mobile",
+              "scope": "#354",
+              "breaking": false,
+              "hash": "86ccfc7"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Mostrar el rango de fechas del reto como fechas, no timestamps (#417)",
+              "scope": "#381",
+              "breaking": false,
+              "hash": "5d29f5a"
+            },
+            {
+              "description": "Borrar las 25 claves duplicadas de los locales (closes #379) (#419)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "d263e65"
+            },
+            {
+              "description": "Estado vacío de retos ya no manda al navegador",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "3dbdbdf"
+            },
+            {
+              "description": "Mantener user_stats con los tres tipos de sesión (#415)",
+              "scope": "#412",
+              "breaking": false,
+              "hash": "9098c50"
+            },
+            {
+              "description": "No guardar el entreno sin ruta si se pulsa antes de cargarla",
+              "scope": "race",
+              "breaking": false,
+              "hash": "357afec"
+            },
+            {
+              "description": "Sacar el recorrido de las carreras a una colección owner-only (#316)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "ffc87bd"
+            },
+            {
+              "description": "Completar el flujo de retos express de punta a punta (#313)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "0e06662"
+            }
+          ]
+        },
+        {
+          "label": "Mejoras internas",
+          "emoji": "♻️",
+          "type": "refactor",
+          "items": [
+            {
+              "description": "Reutilizar la UI de entreno en las batallas (closes #402) (#424)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "3ab6c21"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.8.0",
+      "date": "2026-08-12",
+      "summary": {
+        "es": "Batallas de circuito en tiempo real contra tus amigos, y un repaso a fondo de la privacidad: tus datos de salud dejan de ser visibles para el resto.",
+        "en": "Real-time circuit battles against your friends, plus a thorough privacy pass: your health data is no longer visible to anyone else."
+      },
+      "highlights": [
+        {
+          "icon": "⚔️",
+          "type": "feat",
+          "title": {
+            "es": "Batallas de circuito",
+            "en": "Circuit battles"
+          },
+          "body": {
+            "es": "Reta a tus amigos a un circuito y competid a la vez, viendo en directo por dónde va cada uno. Con barra flotante mientras dura, aviso cuando alguien se une o cuando empieza, descanso entre ejercicios y un historial con la comparación cara a cara en Progreso.",
+            "en": "Challenge your friends to a circuit and race them live, seeing where everyone is in real time. Floating bar while it runs, alerts when someone joins or it starts, rest between exercises, and a history with head-to-head comparison in Progress."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "feat",
+          "title": {
+            "es": "Tus datos de salud, solo tuyos",
+            "en": "Your health data stays yours"
+          },
+          "body": {
+            "es": "La frecuencia cardiaca y las calorías que mide tu reloj, tus objetivos de agua y entrenamiento semanal y tus registros de comida y peso ya no son visibles para otras personas. El muro y el ranking siguen igual: solo se comparte lo que se ve en pantalla.",
+            "en": "The heart rate and calories your watch measures, your water and weekly training goals, and your food and weight logs are no longer visible to other people. The wall and the ranking work exactly as before: only what you see on screen is shared."
+          }
+        },
+        {
+          "icon": "🚫",
+          "type": "feat",
+          "title": {
+            "es": "Bloquear ahora bloquea de verdad",
+            "en": "Blocking now really blocks"
+          },
+          "body": {
+            "es": "Al bloquear a alguien, esa persona deja de ver tu perfil, tus entrenamientos y tu ubicación en una carrera, y deja de llegarte cualquier notificación suya. Antes solo se le impedía interactuar.",
+            "en": "When you block someone, they can no longer see your profile, your workouts or your live position in a race, and none of their notifications reach you. Before, they were only stopped from interacting."
+          }
+        },
+        {
+          "icon": "🏆",
+          "type": "feat",
+          "title": {
+            "es": "Retos más fáciles de empezar",
+            "en": "Easier challenges to start"
+          },
+          "body": {
+            "es": "Retos preparados para empezar de cero con un toque, puntuación acumulativa que suma todo lo que haces durante el reto, y un reto destacado en la pantalla de inicio.",
+            "en": "Ready-made challenges you can join from zero with one tap, cumulative scoring that adds up everything you do during the challenge, and a featured challenge on the home screen."
+          }
+        },
+        {
+          "icon": "🏋️",
+          "type": "feat",
+          "title": {
+            "es": "Sesiones libres",
+            "en": "Free sessions"
+          },
+          "body": {
+            "es": "Entrena sin seguir un programa: monta la sesión sobre la marcha y queda registrada igual que el resto, en tu historial y en tu calendario.",
+            "en": "Train without following a program: build the session as you go and it gets logged like any other, in your history and your calendar."
+          }
+        },
+        {
+          "icon": "🔍",
+          "type": "fix",
+          "title": {
+            "es": "El buscador de amigos ya funciona",
+            "en": "Friend search works now"
+          },
+          "body": {
+            "es": "Buscar a alguien por su nombre en la app no devolvía nada nunca, por un error de la propia búsqueda. Ya encuentra.",
+            "en": "Searching for someone by name never returned anything, because of a bug in the search itself. It finds people now."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Serve cross-user reads from field-scoped public views",
+              "scope": "#386",
+              "breaking": false,
+              "hash": "da0cf06"
+            },
+            {
+              "description": "Battle history and head-to-head comparison in Progress",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "a1c84ee"
+            },
+            {
+              "description": "Show what each opponent is doing in the live standings",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "576f34d"
+            },
+            {
+              "description": "Notify the creator when someone joins and everyone when it starts",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "ae081dc"
+            },
+            {
+              "description": "Show a floating bar while a battle is in progress",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "446a7aa"
+            },
+            {
+              "description": "Rest between exercises, as the circuits already specify",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "6dace68"
+            },
+            {
+              "description": "Server-authoritative battle API and mobile circuit battle MVP",
+              "scope": "#356",
+              "breaking": false,
+              "hash": "03a920f"
+            },
+            {
+              "description": "Reto comunitario destacado en Home (web + móvil) (#373)",
+              "scope": "#351",
+              "breaking": false,
+              "hash": "a382ada"
+            },
+            {
+              "description": "Add cumulative scoring metrics (#352) (#374)",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "1eb2523"
+            },
+            {
+              "description": "Beginner challenge presets and one-tap join (#370)",
+              "scope": "#350",
+              "breaking": false,
+              "hash": "53b8901"
+            },
+            {
+              "description": "Define collaborative circuit battle contract (#372)",
+              "scope": "#355",
+              "breaking": false,
+              "hash": "f40f1dc"
+            },
+            {
+              "description": "Track share-card outcomes (#349) (#368)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "97beacc"
+            },
+            {
+              "description": "Add mobile third-workout referral prompt (#369)",
+              "scope": "#348",
+              "breaking": false,
+              "hash": "3c31c9d"
+            },
+            {
+              "description": "Panel de acciones post-entreno en web y móvil (#347) (#367)",
+              "scope": "growth",
+              "breaking": false,
+              "hash": "df3136d"
+            },
+            {
+              "description": "Define canonical growth events (#346) (#358)",
+              "scope": "analytics",
+              "breaking": false,
+              "hash": "31a9de4"
+            },
+            {
+              "description": "Blog en MDX, rediseño con el lenguaje de la landing y navegación pública (#343)",
+              "scope": "blog",
+              "breaking": false,
+              "hash": "8276b26"
+            },
+            {
+              "description": "Abrir el detalle de una sesión ajena desde el muro y la actividad reciente (#342)",
+              "scope": "social",
+              "breaking": false,
+              "hash": "401a38a"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Buscar usuarios por un campo que existe (#408)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "c96cedd"
+            },
+            {
+              "description": "A blocked user can no longer read anything from the blocker",
+              "scope": "#386",
+              "breaking": false,
+              "hash": "d01caf1"
+            },
+            {
+              "description": "Enforce block filter on settings and sets_log reads",
+              "scope": "#386",
+              "breaking": false,
+              "hash": "8f2117c"
+            },
+            {
+              "description": "Reject finish while the countdown is still running",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "603a45f"
+            },
+            {
+              "description": "Show a waiting state when your circuit ends before the battle does",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "2447739"
+            },
+            {
+              "description": "Recover from a lost connection instead of hanging on \"Cargando…\"",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "fdfdeea"
+            },
+            {
+              "description": "Unlock the live controls when the countdown lapses",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "489780d"
+            },
+            {
+              "description": "Decide the floating bar on my seat, not the battle status",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "e6a2b1e"
+            },
+            {
+              "description": "Stop showing raw error text on the invite screen",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "2b17f1b"
+            },
+            {
+              "description": "Rank equal scores by who finished first",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "989ec16"
+            },
+            {
+              "description": "Sort the active-battle lookup by a field that exists",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "4c13be2"
+            },
+            {
+              "description": "Stop promising offline buffering a battle does not do",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "eaa7679"
+            },
+            {
+              "description": "Give the user a way back into a battle after an app kill",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "a6cb4a7"
+            },
+            {
+              "description": "Say \"1 participante\", not \"1 participantes\"",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "1ca69bb"
+            },
+            {
+              "description": "Stop the expiry sweep from killing fresh lobbies",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "8919568"
+            },
+            {
+              "description": "Translate the challenges screens and unify on \"reto\" (#375) (#378)",
+              "scope": "i18n",
+              "breaking": false,
+              "hash": "838ef51"
+            },
+            {
+              "description": "Log when the expiry sweep hits its batch cap",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "ee6d5e7"
+            },
+            {
+              "description": "Guardar las sesiones libres en PocketBase (#377)",
+              "scope": "#376",
+              "breaking": false,
+              "hash": "8377f03"
+            },
+            {
+              "description": "Enviar los recordatorios en la hora local del usuario (#344)",
+              "scope": "reminders",
+              "breaking": false,
+              "hash": "5797f3d"
+            }
+          ]
+        },
+        {
+          "label": "Mejoras internas",
+          "emoji": "♻️",
+          "type": "refactor",
+          "items": [
+            {
+              "description": "Use requestKey instead of the deprecated $autoCancel",
+              "scope": "battles",
+              "breaking": false,
+              "hash": "2a88474"
+            },
+            {
+              "description": "Move GPS races off the battle_* event names",
+              "scope": "analytics",
+              "breaking": true,
+              "hash": "0ef11bc"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.7.1",
+      "date": "2026-08-07",
+      "summary": {
+        "es": "Arregla la 1.7.0: la app se veía completamente descolocada, sin estilos ni fuentes. Ya se muestra como debe.",
+        "en": "Fixes 1.7.0: the app rendered completely broken, with no styles or fonts. It now looks the way it should."
+      },
+      "highlights": [
+        {
+          "icon": "🩹",
+          "type": "fix",
+          "title": {
+            "es": "La app vuelve a verse bien",
+            "en": "The app looks right again"
+          },
+          "body": {
+            "es": "Si al actualizar a la 1.7.0 viste la app descolocada, con el texto pegado al borde y sin fuentes, ya está resuelto. No tienes que hacer nada: tus datos y tu sesión siguen intactos.",
+            "en": "If the app looked broken after updating to 1.7.0 — text stuck to the edge, no fonts — it is fixed now. Nothing for you to do: your data and session are untouched."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Deduplicar react-native-css-interop (v1.7.0 salía sin estilos)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "15ef4fa"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.7.0",
+      "date": "2026-08-05",
+      "summary": {
+        "es": "Edita la porción de cada alimento y las macros se recalculan solas, sugerencia IA más discreta, baja de cuenta desde la app y más privacidad en tus rutas de cardio.",
+        "en": "Edit each food portion and macros recalculate automatically, a tidier AI suggestion, in-app account deletion, and more privacy for your cardio routes."
+      },
+      "highlights": [
+        {
+          "icon": "⚖️",
+          "type": "feat",
+          "title": {
+            "es": "Porción editable",
+            "en": "Editable portion"
+          },
+          "body": {
+            "es": "Ajusta la cantidad de cada alimento directamente en su card y las calorías y macros se recalculan al instante.",
+            "en": "Adjust each food amount right on its card and calories and macros recalculate instantly."
+          }
+        },
+        {
+          "icon": "💡",
+          "type": "feat",
+          "title": {
+            "es": "Sugerencia IA plegable",
+            "en": "Collapsible AI suggestion"
+          },
+          "body": {
+            "es": "La sugerencia del coach al registrar una comida ahora aparece plegada: ábrela solo cuando te interese.",
+            "en": "The coach suggestion when logging a meal now starts collapsed: open it only when you want it."
+          }
+        },
+        {
+          "icon": "👋",
+          "type": "feat",
+          "title": {
+            "es": "Baja de cuenta",
+            "en": "Account deletion"
+          },
+          "body": {
+            "es": "Elimina tu cuenta y todos tus datos directamente desde la app, sin pasos externos.",
+            "en": "Delete your account and all your data right from the app, no external steps."
+          }
+        },
+        {
+          "icon": "🔔",
+          "type": "fix",
+          "title": {
+            "es": "Aviso de reto terminado",
+            "en": "Challenge-ended alert"
+          },
+          "body": {
+            "es": "La notificación de reto terminado ahora llega en el momento correcto, cuando el reto acaba de verdad.",
+            "en": "The challenge-ended notification now arrives at the right moment, when the challenge actually ends."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "fix",
+          "title": {
+            "es": "Rutas de cardio privadas",
+            "en": "Private cardio routes"
+          },
+          "body": {
+            "es": "Tus rutas GPS de cardio ahora solo son visibles para ti: nadie más puede consultarlas.",
+            "en": "Your cardio GPS routes are now visible only to you: no one else can look them up."
+          }
+        },
+        {
+          "icon": "🧹",
+          "type": "fix",
+          "title": {
+            "es": "Análisis de comida más limpio",
+            "en": "Cleaner meal analysis"
+          },
+          "body": {
+            "es": "Los textos del análisis de fotos de comida ya no muestran citas ni URLs extrañas de la búsqueda web.",
+            "en": "Meal photo analysis texts no longer show odd citations or URLs from web search."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Porción editable en la card de alimento con recálculo automático de macros (#335) (#339)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "8454aed"
+            },
+            {
+              "description": "Colapsar la sugerencia IA tras un disclosure cerrado por defecto (#337) (#341)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "325a2be"
+            },
+            {
+              "description": "Baja de cuenta autoservicio en web y Android (#300) (#315)",
+              "scope": "account",
+              "breaking": false,
+              "hash": "dbfa791"
+            },
+            {
+              "description": "Página propia de /features/challenges, reencuadrada como meta con fecha (#311)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "6d0bbef"
+            },
+            {
+              "description": "Activar el session replay de OpenPanel, enmascarado por defecto (#310)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "00c7c36"
+            },
+            {
+              "description": "Página propia de /features/circuits con demo del cronómetro (#309)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "69d5e6e"
+            },
+            {
+              "description": "Página propia de /features/offline (closes #288) (#303)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "ee786d2"
+            },
+            {
+              "description": "Página propia de /features/comunidad (closes #287) (#297)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "444c728"
+            },
+            {
+              "description": "Página propia de /features/progress (closes #282) (#296)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "06ec278"
+            },
+            {
+              "description": "Página propia de /features/nutrition (closes #281) (#293)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "48d3170"
+            },
+            {
+              "description": "Página propia de /features/races (closes #285) (#292)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "46ee716"
+            },
+            {
+              "description": "PLANIFICAR con dos ejes, un presupuesto y un CTA",
+              "scope": "web",
+              "breaking": false,
+              "hash": "1103578"
+            },
+            {
+              "description": "Primitivo Kicker y JetBrains Mono en la config de tailwind",
+              "scope": "web",
+              "breaking": false,
+              "hash": "ef869fc"
+            },
+            {
+              "description": "Página propia de /features/training (closes #280) (#291)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "9513b09"
+            },
+            {
+              "description": "Página propia de /features/cardio (closes #283) (#290)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "aeaac3b"
+            },
+            {
+              "description": "Modelo y lógica pura de PLANIFICAR (meal_day_plans + spec)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "82a5349"
+            },
+            {
+              "description": "Recetas con ingredientes en el plan libre + budget_kind explícito",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "007a7a6"
+            },
+            {
+              "description": "Páginas públicas /features con plantilla compartida (#279)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "892ba39"
+            },
+            {
+              "description": "Upgrade a Vite 8 (Rolldown) con strictExecutionOrder",
+              "scope": "web",
+              "breaking": false,
+              "hash": "9855ede"
+            },
+            {
+              "description": "% grasa corporal método Navy + medidas corporales en mobile (#227)",
+              "scope": null,
+              "breaking": false,
+              "hash": "fe8b2c0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Sanitizar citas/URLs de web_search en portionNote y demás textos del meal-analyzer (#336) (#340)",
+              "scope": "ai",
+              "breaking": false,
+              "hash": "2728a7a"
+            },
+            {
+              "description": "No pisar portionAmount con portionGrams cuando la unidad es 'unidad' (#334) (#338)",
+              "scope": "core",
+              "breaking": false,
+              "hash": "18383b3"
+            },
+            {
+              "description": "Disparar la notificación de reto terminado con 'ended', no 'completed' (#312) (#331)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "eecfeeb"
+            },
+            {
+              "description": "Sacar la ruta GPS de cardio a una colección owner-only (#299) (#314)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "158e012"
+            },
+            {
+              "description": "El smoke e2e desactiva el InstallPrompt antes de que arranque la app (#305)",
+              "scope": "web",
+              "breaking": false,
+              "hash": "8f4502e"
+            },
+            {
+              "description": "Ocultar el FAB de registro en PLANIFICAR",
+              "scope": "web",
+              "breaking": false,
+              "hash": "198b59e"
+            },
+            {
+              "description": "La card de cambio de objetivo solo en HOY",
+              "scope": "web",
+              "breaking": false,
+              "hash": "4a4434f"
+            },
+            {
+              "description": "Eliminar challenge_invite, código muerto inalcanzable (closes #261)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "4cecfd1"
+            },
+            {
+              "description": "Racha que cruza varios milestones notifica el mayor (closes #260)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "2d9be8f"
+            },
+            {
+              "description": "Hooks que fallaban en silencio en produccion (4 bugs)",
+              "scope": "pb",
+              "breaking": false,
+              "hash": "82c12db"
+            },
+            {
+              "description": "Detectar sesión fantasma cuando el server invalida el token (#254)",
+              "scope": "auth",
+              "breaking": false,
+              "hash": "c586880"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.6.0",
+      "date": "2026-07-20",
+      "summary": {
+        "es": "Crea tus propios programas desde el móvil, registra tu sueño con resumen IA, cambia tu objetivo nutricional cuando quieras y celebra tus logros como se merece.",
+        "en": "Build your own programs on mobile, log your sleep with an AI summary, change your nutrition goal anytime, and celebrate your achievements properly."
+      },
+      "highlights": [
+        {
+          "icon": "🏗️",
+          "type": "feat",
+          "title": {
+            "es": "Editor de programas",
+            "en": "Program editor"
+          },
+          "body": {
+            "es": "Crea y edita tus propios programas desde el móvil: fases, días (fuerza, cardio o circuito) y ejercicios del catálogo, en un asistente de 4 pasos.",
+            "en": "Create and edit your own programs on mobile: phases, days (strength, cardio or circuit) and catalog exercises, in a 4-step wizard."
+          }
+        },
+        {
+          "icon": "😴",
+          "type": "feat",
+          "title": {
+            "es": "Sueño con resumen IA",
+            "en": "Sleep with AI summary"
+          },
+          "body": {
+            "es": "Registra tu sueño directamente en la app y recibe un análisis IA de tu patrón: consistencia, cafeína, pantallas y más.",
+            "en": "Log your sleep right in the app and get an AI analysis of your pattern: consistency, caffeine, screens and more."
+          }
+        },
+        {
+          "icon": "🎯",
+          "type": "feat",
+          "title": {
+            "es": "Objetivo editable",
+            "en": "Editable goal"
+          },
+          "body": {
+            "es": "Cambia tu objetivo nutricional cuando quieras con vista previa de calorías y macros, y edita tus datos corporales desde el perfil.",
+            "en": "Change your nutrition goal anytime with a calorie and macro preview, and edit your body data from your profile."
+          }
+        },
+        {
+          "icon": "🏅",
+          "type": "feat",
+          "title": {
+            "es": "Celebración de logros",
+            "en": "Achievement celebration"
+          },
+          "body": {
+            "es": "Los badges de nutrición ahora se celebran con una pantalla propia — y si ganas varios a la vez, los ves en secuencia.",
+            "en": "Nutrition badges now get a proper celebration screen — earn several at once and see them in sequence."
+          }
+        },
+        {
+          "icon": "🛡️",
+          "type": "feat",
+          "title": {
+            "es": "Denunciar contenido",
+            "en": "Report content"
+          },
+          "body": {
+            "es": "Denuncia usuarios o comentarios inapropiados desde el perfil o los comentarios; nuestro equipo los revisa.",
+            "en": "Report inappropriate users or comments from their profile or the comments sheet; our team reviews them."
+          }
+        },
+        {
+          "icon": "🔧",
+          "type": "fix",
+          "title": {
+            "es": "Onboarding más robusto",
+            "en": "Sturdier onboarding"
+          },
+          "body": {
+            "es": "El registro ya no puede perder tu perfil en silencio: si algo falla al guardar, te avisa y puedes reintentar.",
+            "en": "Sign-up can no longer silently lose your profile: if saving fails you are told and can retry."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Editor de programas nativo, wizard 4 pasos (#223, #224)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "44e5fe9"
+            },
+            {
+              "description": "Celebración de badges con dialog spec-sheet en vez de Alert (#231)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "595bc6e"
+            },
+            {
+              "description": "Denunciar usuarios y comentarios (content_reports, #220)",
+              "scope": "social",
+              "breaking": false,
+              "hash": "7b40fae"
+            },
+            {
+              "description": "Resumen IA del patrón de sueño (#244 F2-F5)",
+              "scope": "sleep",
+              "breaking": false,
+              "hash": "fc303e1"
+            },
+            {
+              "description": "Cambiar objetivo + editar cuerpo + recompute auto (#243 F3/F4)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "80da4b5"
+            },
+            {
+              "description": "Cambiar de objetivo tras el onboarding + recalcular (#243 F2)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "bd6fc7c"
+            },
+            {
+              "description": "Registro de sueño nativo — paridad con web (#244 F1)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "2ccde5e"
+            },
+            {
+              "description": "Extrae cálculo de objetivos a core + campo source (#243 F1)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "d747957"
+            },
+            {
+              "description": "Hints contextuales one-shot (callouts inline descartables)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "ff8606f"
+            },
+            {
+              "description": "Selector de idioma ES/EN en el onboarding (web y native)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "3c8984b"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Mueve medical_conditions/injuries a colección user_health per-user (#247)",
+              "scope": "security",
+              "breaking": false,
+              "hash": "adae23a"
+            },
+            {
+              "description": "Endurece createRule en 10 colecciones per-user (inyección cross-user)",
+              "scope": "security",
+              "breaking": false,
+              "hash": "f8d1c3e"
+            },
+            {
+              "description": "Edad/sexo en nutrition_goals en web + regla PB más fuerte (#243 F4a)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "9983d8a"
+            },
+            {
+              "description": "Persist edad/sexo del cuerpo en nutrition_goals, no en users (#243 F4a)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "3a7913b"
+            },
+            {
+              "description": "Evita eyección del recovery y no avanza si falla el guardado",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "e9d8e45"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.5.0",
+      "date": "2026-07-18",
+      "summary": {
+        "es": "Primeros pasos guiados en el Home, un directorio «Descubre» con las 21 funciones de la app, y pantallas vacías que ahora enseñan a usar cada una.",
+        "en": "A guided getting-started checklist on Home, a «Discover» directory of all 21 app features, and empty screens that now teach you how to use them."
+      },
+      "highlights": [
+        {
+          "icon": "🎯",
+          "type": "feat",
+          "title": {
+            "es": "Primeros pasos",
+            "en": "Getting started"
+          },
+          "body": {
+            "es": "Nuevo checklist en el Home con 6 pasos de activación, barra de progreso y un acceso directo a cada uno.",
+            "en": "A new Home checklist with 6 activation steps, a progress bar, and a shortcut to each one."
+          }
+        },
+        {
+          "icon": "🧭",
+          "type": "feat",
+          "title": {
+            "es": "Descubre",
+            "en": "Discover"
+          },
+          "body": {
+            "es": "Nueva sección en tu perfil con las 21 funciones de la app organizadas por categoría, cada una a un toque de distancia.",
+            "en": "A new section in your profile lists all 21 app features by category, each one a tap away."
+          }
+        },
+        {
+          "icon": "💡",
+          "type": "feat",
+          "title": {
+            "es": "Pantallas vacías que enseñan",
+            "en": "Guided empty states"
+          },
+          "body": {
+            "es": "Historial, biblioteca, calendario y otras pantallas ahora explican qué hacer cuando están vacías, con un botón directo a la acción.",
+            "en": "History, library, calendar and other screens now explain what to do when they're empty, with a direct action button."
+          }
+        },
+        {
+          "icon": "🐛",
+          "type": "fix",
+          "title": {
+            "es": "Crash al deslizar en la sesión",
+            "en": "Session-swipe crash"
+          },
+          "body": {
+            "es": "Arreglado un cierre inesperado de la app al deslizar entre ejercicios durante el entreno.",
+            "en": "Fixed the app closing unexpectedly when swiping between exercises mid-workout."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Sección «Descubre» en Perfil, directorio bilingüe de features",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "8f50bc0"
+            },
+            {
+              "description": "Empty states educativos + componente EmptyState compartido",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "b900ae9"
+            },
+            {
+              "description": "Checklist «Primeros pasos» en Home con 6 ítems de activación",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "6826ba0"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Crash al deslizar entre ejercicios en la sesión",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "53ba9db"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.4.0",
+      "date": "2026-07-17",
+      "summary": {
+        "es": "Onboarding más inteligente: define tu objetivo principal, mide tu ratio cintura/altura y elige tu idioma. Además, retoma tu sesión de fuerza en cualquier dispositivo.",
+        "en": "Smarter onboarding: set your primary goal, measure your waist-to-height ratio and pick your language. Plus, resume your strength session on any device."
+      },
+      "highlights": [
+        {
+          "icon": "🎯",
+          "type": "feat",
+          "title": {
+            "es": "Objetivo principal",
+            "en": "Primary goal"
+          },
+          "body": {
+            "es": "El onboarding ahora te pide tu objetivo principal de forma estructurada y adapta las recomendaciones a él.",
+            "en": "Onboarding now asks for your primary goal in a structured way and tailors recommendations to it."
+          }
+        },
+        {
+          "icon": "📏",
+          "type": "feat",
+          "title": {
+            "es": "Ratio cintura/altura",
+            "en": "Waist-to-height ratio"
+          },
+          "body": {
+            "es": "Nueva medida de cintura en el onboarding para calcular tu ratio cintura/altura (WHtR), un indicador de salud más fiable que el IMC solo.",
+            "en": "New waist measurement during onboarding to compute your waist-to-height ratio (WHtR), a more reliable health indicator than BMI alone."
+          }
+        },
+        {
+          "icon": "🌐",
+          "type": "feat",
+          "title": {
+            "es": "Idioma ES/EN",
+            "en": "ES/EN language"
+          },
+          "body": {
+            "es": "Elige entre español e inglés directamente desde el onboarding, en web y en la app.",
+            "en": "Choose between Spanish and English right from onboarding, on web and in the app."
+          }
+        },
+        {
+          "icon": "🔄",
+          "type": "feat",
+          "title": {
+            "es": "Reanuda tu sesión donde sea",
+            "en": "Resume your session anywhere"
+          },
+          "body": {
+            "es": "Tu sesión de fuerza en curso se sincroniza con el servidor: empieza en el móvil y continúa en la web, o al revés.",
+            "en": "Your in-progress strength session syncs to the server: start on your phone and continue on the web, or the other way around."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Selector de idioma ES/EN en el onboarding (web y native)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "f896129"
+            },
+            {
+              "description": "Cierra huecos de lógica de negocio del objetivo principal (#226)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "d69714c"
+            },
+            {
+              "description": "Objetivo principal estructurado + ratio cintura/altura (#226)",
+              "scope": "onboarding",
+              "breaking": false,
+              "hash": "d9fdc3b"
+            },
+            {
+              "description": "Amplía landing v2 con secciones de historia y og image",
+              "scope": "web",
+              "breaking": false,
+              "hash": "4d6da19"
+            },
+            {
+              "description": "Sincroniza la sesión de fuerza en curso con el server (reanudar web↔mobile)",
+              "scope": "session",
+              "breaking": false,
+              "hash": "78cc75c"
+            },
+            {
+              "description": "Reestructura la vista en HOY/PLANIFICAR (native y web)",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "7eba6fb"
+            },
+            {
+              "description": "Enrich landing story and hero",
+              "scope": "web",
+              "breaking": false,
+              "hash": "7feb502"
+            },
+            {
+              "description": "Redesign beginner landing page",
+              "scope": "web",
+              "breaking": false,
+              "hash": "534ca21"
+            }
+          ]
+        },
+        {
+          "label": "Mejoras internas",
+          "emoji": "♻️",
+          "type": "refactor",
+          "items": [
+            {
+              "description": "Extrae helpers de BMI compartidos a core",
+              "scope": "core",
+              "breaking": false,
+              "hash": "c094dfb"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.3.2",
+      "date": "2026-07-14",
+      "summary": {
+        "es": "Toca el nombre de un amigo en el feed para abrir su perfil.",
+        "en": "Tap a friend's name in the feed to open their profile."
+      },
+      "highlights": [
+        {
+          "icon": "👤",
+          "type": "feat",
+          "title": {
+            "es": "Perfil desde el feed",
+            "en": "Profile from the feed"
+          },
+          "body": {
+            "es": "Tocar el autor de una actividad abre su perfil. También avisamos si bloquear/desbloquear falla.",
+            "en": "Tapping an activity's author opens their profile. We also warn you if block/unblock fails."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Tocar autor del feed abre su perfil + alert si block/unblock falla",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "09d803e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.3.1",
+      "date": "2026-07-14",
+      "summary": {
+        "es": "Bloquear usuarios ahora es más claro y rápido desde el perfil.",
+        "en": "Blocking users is now clearer and faster from the profile."
+      },
+      "highlights": [
+        {
+          "icon": "🚫",
+          "type": "feat",
+          "title": {
+            "es": "Bloqueo rediseñado",
+            "en": "Block redesigned"
+          },
+          "body": {
+            "es": "Nuevo menú ⋯ en el perfil para bloquear, y un aviso claro con botón para desbloquear cuando un usuario está bloqueado.",
+            "en": "New ⋯ menu on profiles to block, and a clear notice with an unblock button when a user is blocked."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "date": "2026-07-14",
+      "summary": {
+        "es": "Ahora puedes bloquear usuarios: su actividad desaparece para ti en toda la app.",
+        "en": "You can now block users: their activity disappears for you across the whole app."
+      },
+      "highlights": [
+        {
+          "icon": "🚫",
+          "type": "feat",
+          "title": {
+            "es": "Bloquear usuarios",
+            "en": "Block users"
+          },
+          "body": {
+            "es": "Bloquea a cualquier usuario desde su perfil: se dejan de seguir mutuamente y su actividad desaparece del feed, comentarios, reacciones, rankings y retos.",
+            "en": "Block any user from their profile: you unfollow each other and their activity disappears from your feed, comments, reactions, leaderboards and challenges."
+          }
+        },
+        {
+          "icon": "⚙️",
+          "type": "feat",
+          "title": {
+            "es": "Gestión de bloqueados",
+            "en": "Blocked users management"
+          },
+          "body": {
+            "es": "Nueva pantalla en tu perfil para ver y desbloquear usuarios cuando quieras.",
+            "en": "New screen in your profile to review and unblock users anytime."
+          }
+        },
+        {
+          "icon": "🔕",
+          "type": "feat",
+          "title": {
+            "es": "Sin ruido",
+            "en": "No noise"
+          },
+          "body": {
+            "es": "Un usuario bloqueado no puede comentar tu actividad, seguirte ni enviarte notificaciones.",
+            "en": "A blocked user can't comment on your activity, follow you or send you notifications."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.2.1",
+      "date": "2026-07-13",
+      "summary": {
+        "es": "Mejoras y correcciones de esta versión.",
+        "en": "Mejoras y correcciones de esta versión."
+      },
+      "highlights": [
+        {
+          "icon": "✨",
+          "type": "feat",
+          "title": {
+            "es": "web",
+            "en": "web"
+          },
+          "body": {
+            "es": "Página de eliminación de cuenta para Google Play",
+            "en": "Página de eliminación de cuenta para Google Play"
+          }
+        },
+        {
+          "icon": "✨",
+          "type": "feat",
+          "title": {
+            "es": "web",
+            "en": "web"
+          },
+          "body": {
+            "es": "Página de política de privacidad para Google Play",
+            "en": "Página de política de privacidad para Google Play"
+          }
+        },
+        {
+          "icon": "✨",
+          "type": "feat",
+          "title": {
+            "es": "mcp",
+            "en": "mcp"
+          },
+          "body": {
+            "es": "Widgets visuales para despensa y recetas (8 nuevos, 19 total) (#202)",
+            "en": "Widgets visuales para despensa y recetas (8 nuevos, 19 total) (#202)"
+          }
+        },
+        {
+          "icon": "✨",
+          "type": "feat",
+          "title": {
+            "es": "deps",
+            "en": "deps"
+          },
+          "body": {
+            "es": "Tailwindcss+vitest bumps in apps/web (#146 parte 3a) — Vite 8 reverted, blocked upstream (#200)",
+            "en": "Tailwindcss+vitest bumps in apps/web (#146 parte 3a) — Vite 8 reverted, blocked upstream (#200)"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Página de eliminación de cuenta para Google Play",
+              "scope": "web",
+              "breaking": false,
+              "hash": "6aad9dc"
+            },
+            {
+              "description": "Página de política de privacidad para Google Play",
+              "scope": "web",
+              "breaking": false,
+              "hash": "777b996"
+            },
+            {
+              "description": "Widgets visuales para despensa y recetas (8 nuevos, 19 total) (#202)",
+              "scope": "mcp",
+              "breaking": false,
+              "hash": "1918a21"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Tailwindcss+vitest bumps in apps/web (#146 parte 3a) — Vite 8 reverted, blocked upstream (#200)",
+              "scope": "deps",
+              "breaking": false,
+              "hash": "d7d17ff"
+            },
+            {
+              "description": "Bump Expo SDK 56 → 57 + React Native 0.85 → 0.86 (#146 parte 3b) (#201)",
+              "scope": "deps",
+              "breaking": false,
+              "hash": "9da3b92"
+            },
+            {
+              "description": "Show the same curated bilingual message on web and mobile",
+              "scope": "whats-new",
+              "breaking": false,
+              "hash": "46aaa3a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2026-07-10",
+      "summary": {
+        "es": "Carreras por tiempo con ranking real y countdown en rojo, y tu sesión offline ya no te desloguea ni pierde datos.",
+        "en": "Timed races get real ranking and a red countdown, and going offline no longer logs you out or loses your data."
+      },
+      "highlights": [
+        {
+          "icon": "🏁",
+          "type": "feat",
+          "title": {
+            "es": "Ranking real en carreras por tiempo",
+            "en": "Real ranking in timed races"
+          },
+          "body": {
+            "es": "En carreras a tiempo fijo ahora se ordena por distancia recorrida, no por quién sincronizó antes. El ganador se marca como \"Recorrió más\".",
+            "en": "Timed races now rank by distance covered instead of who synced first. The winner is tagged \"Went furthest\"."
+          }
+        },
+        {
+          "icon": "🔴",
+          "type": "feat",
+          "title": {
+            "es": "Countdown final en rojo",
+            "en": "Red final countdown"
+          },
+          "body": {
+            "es": "Los últimos 10 segundos de carrera se ven en rojo con vibración y sonido en cada segundo, para que sepas exactamente cuándo apretar.",
+            "en": "The race's final 10 seconds turn red with a haptic + sound tick every second, so you know exactly when to push."
+          }
+        },
+        {
+          "icon": "📡",
+          "type": "fix",
+          "title": {
+            "es": "Sin conexión ya no te desloguea",
+            "en": "No connection no longer logs you out"
+          },
+          "body": {
+            "es": "Abrir la app sin internet mantenía tu sesión, pero por un bug te deslogueaba y podía perder entrenamientos guardados sin conexión. Arreglado: tu sesión y tus datos offline ahora sobreviven arranques sin red.",
+            "en": "Opening the app without internet used to log you out and could silently lose workouts saved while offline. Fixed — your session and offline data now survive starting up with no connection."
+          }
+        },
+        {
+          "icon": "0️⃣",
+          "type": "fix",
+          "title": {
+            "es": "El cero ahora cuenta",
+            "en": "Zero now counts"
+          },
+          "body": {
+            "es": "Poner un macro en 0g o un descanso de circuito en 0s se guardaba como valor por defecto en vez de respetar el cero que elegiste. Ya se respeta.",
+            "en": "Setting a macro to 0g or a circuit rest to 0s used to fall back to a default instead of respecting the zero you picked. Now it sticks."
+          }
+        },
+        {
+          "icon": "🔒",
+          "type": "security",
+          "title": {
+            "es": "Dependencias actualizadas",
+            "en": "Dependencies updated"
+          },
+          "body": {
+            "es": "Actualizamos el SDK de PocketBase y parcheamos una vulnerabilidad de bajo impacto en una librería interna.",
+            "en": "Updated the PocketBase SDK and patched a low-severity vulnerability in an internal library."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-07-03",
+      "summary": {
+        "es": "Tus insights semanales evolucionan: historial, tendencias, una sugerencia accionable y un resumen automático cada lunes.",
+        "en": "Your weekly insights level up: history, trends, an actionable tip, and an automatic summary every Monday."
+      },
+      "highlights": [
+        {
+          "icon": "🗓️",
+          "type": "feat",
+          "title": {
+            "es": "Tus semanas: historial de insights",
+            "en": "Your weeks: insights history"
+          },
+          "body": {
+            "es": "Una nueva pantalla reúne tus resúmenes semanales anteriores para ver patrones a lo largo del tiempo. Fíltralos por semana o mes.",
+            "en": "A new screen collects your past weekly summaries so you can spot patterns over time. Filter them by week or month."
+          }
+        },
+        {
+          "icon": "✅",
+          "type": "feat",
+          "title": {
+            "es": "Sugerencia accionable",
+            "en": "Actionable suggestion"
+          },
+          "body": {
+            "es": "Cuando encaja, tu resumen propone una acción concreta y te lleva a ella de un toque (recordatorios, nutrición o una sesión libre).",
+            "en": "When it fits, your summary proposes a concrete next step and takes you there in one tap (reminders, nutrition, or a free session)."
+          }
+        },
+        {
+          "icon": "📈",
+          "type": "feat",
+          "title": {
+            "es": "Tendencia de la semana",
+            "en": "Weekly trend"
+          },
+          "body": {
+            "es": "Cada resumen muestra si vas mejor, igual o peor que la semana anterior con una señal ↑ / → / ↓.",
+            "en": "Each summary shows whether you're trending up, flat, or down versus last week with an ↑ / → / ↓ badge."
+          }
+        },
+        {
+          "icon": "🔔",
+          "type": "feat",
+          "title": {
+            "es": "Resumen automático cada lunes",
+            "en": "Automatic weekly summary"
+          },
+          "body": {
+            "es": "Ya no hace falta generarlo a mano: cada lunes por la mañana preparamos tu resumen y te avisamos con una notificación.",
+            "en": "No need to generate it by hand anymore — every Monday morning we prepare your summary and let you know with a notification."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.0.9",
+      "date": "2026-07-03",
+      "summary": {
+        "es": "Insights que cruzan tus métricas de la semana, y el catálogo crece a 1,578 ejercicios con filtros y retos.",
+        "en": "Weekly insights across your metrics, plus a 1,578-exercise catalog with filters and challenges."
+      },
+      "highlights": [
+        {
+          "icon": "🧠",
+          "type": "feat",
+          "title": {
+            "es": "Insights de tu semana",
+            "en": "Your weekly insights"
+          },
+          "body": {
+            "es": "La app cruza tu sueño, entrenos, nutrición, agua y peso para mostrarte patrones de tu semana con una sugerencia accionable. Tócalo en \"Generar resumen\" desde Inicio.",
+            "en": "The app cross-references your sleep, workouts, nutrition, water and weight to surface your week's patterns with one actionable tip. Tap \"Generate\" on Home."
+          }
+        },
+        {
+          "icon": "📚",
+          "type": "feat",
+          "title": {
+            "es": "Catálogo ampliado a 1,578 ejercicios",
+            "en": "Catalog expanded to 1,578 exercises"
+          },
+          "body": {
+            "es": "El catálogo pasa de 307 a 1,578 ejercicios, con nombres e instrucciones en español (98% con descripción). Por ahora sin GIFs de terceros.",
+            "en": "The exercise catalog grows from 307 to 1,578 exercises, with Spanish names and instructions (98% with a description). No third-party GIFs for now."
+          }
+        },
+        {
+          "icon": "🔍",
+          "type": "feat",
+          "title": {
+            "es": "Filtros de biblioteca en móvil",
+            "en": "Library filters on mobile"
+          },
+          "body": {
+            "es": "Filtra la biblioteca por dificultad, equipo y grupo muscular — igual que en la web.",
+            "en": "Filter the library by difficulty, equipment and muscle group — now matching the web."
+          }
+        },
+        {
+          "icon": "🤸",
+          "type": "feat",
+          "title": {
+            "es": "Filtro \"Sin equipo\"",
+            "en": "\"No equipment\" filter"
+          },
+          "body": {
+            "es": "Nuevo filtro para ver solo ejercicios de puro peso corporal (454 en el catálogo).",
+            "en": "New filter to show only pure bodyweight exercises (454 in the catalog)."
+          }
+        },
+        {
+          "icon": "💪",
+          "type": "feat",
+          "title": {
+            "es": "Grupos musculares y variantes por nivel",
+            "en": "Muscle groups and level-based variants"
+          },
+          "body": {
+            "es": "Chips de filtro por 15 grupos musculares canónicos, y una nueva sección \"Variantes\" en cada ejercicio agrupada por nivel — más fáciles, mismo nivel, más difíciles.",
+            "en": "Filter chips for 15 canonical muscle groups, plus a new \"Variants\" section on every exercise grouped by level — easier, same level, harder."
+          }
+        },
+        {
+          "icon": "🔗",
+          "type": "feat",
+          "title": {
+            "es": "Ejercicios relacionados",
+            "en": "Related exercises"
+          },
+          "body": {
+            "es": "Cada ejercicio ahora sugiere \"Relacionados\" — movimientos parecidos por músculos que no son variaciones del mismo ejercicio.",
+            "en": "Every exercise now suggests \"Related\" picks — similar movements by muscle that aren't variations of the same exercise."
+          }
+        },
+        {
+          "icon": "🏆",
+          "type": "feat",
+          "title": {
+            "es": "Retos por ejercicio",
+            "en": "Per-exercise challenges"
+          },
+          "body": {
+            "es": "Crea un reto sobre cualquier ejercicio del catálogo (p. ej. \"PR de dominadas en 30 días\") desde la web; el leaderboard puntúa tu mejor set registrado.",
+            "en": "Create a challenge on any catalog exercise (e.g. \"30-day pull-up PR\") from the web; the leaderboard scores your best logged set."
+          }
+        },
+        {
+          "icon": "🏋️",
+          "type": "feat",
+          "title": {
+            "es": "PRs con peso extra",
+            "en": "PRs with added weight"
+          },
+          "body": {
+            "es": "Los récords personales ahora estiman tu e1RM al registrar peso extra (lastre).",
+            "en": "Personal records now estimate your e1RM when you log added weight."
+          }
+        },
+        {
+          "icon": "🚫",
+          "type": "feat",
+          "title": {
+            "es": "Sesión libre IA sin gimnasio por defecto",
+            "en": "AI free session skips gym by default"
+          },
+          "body": {
+            "es": "La sesión libre con IA excluye ejercicios de gimnasio salvo que actives incluirlos.",
+            "en": "The AI free session skips gym-equipment exercises unless you turn them on."
+          }
+        },
+        {
+          "icon": "🐛",
+          "type": "fix",
+          "title": {
+            "es": "Traducciones corregidas",
+            "en": "Translation fixes"
+          },
+          "body": {
+            "es": "8 ejercicios (como Muscle up) ya no muestran su descripción en inglés con la app en español, y el chip de dificultad en el detalle del ejercicio ahora se traduce correctamente.",
+            "en": "8 exercises (like Muscle up) no longer show their description in English when the app is set to Spanish, and the difficulty chip on the exercise detail now translates correctly."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Cross-metric AI insights — aggregator, endpoint, hook, Home card (epic #128 Fase 2)",
+              "scope": "insights",
+              "breaking": false,
+              "hash": "163d927"
+            },
+            {
+              "description": "Import masivo de ExerciseDB: catálogo de 307 a 1,578 ejercicios con nombres e instrucciones en español",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "64da7fe"
+            },
+            {
+              "description": "Sesión libre con IA prioriza calistenia y excluye gimnasio salvo activarlo; PRs con peso vía e1RM; reseed de catálogo",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "21c9e13"
+            },
+            {
+              "description": "Filtros de biblioteca en móvil por dificultad, equipo y grupo muscular",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "a258447"
+            },
+            {
+              "description": "Taxonomía muscular canónica de 15 grupos en cada ejercicio del catálogo",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "8f92cfa"
+            },
+            {
+              "description": "Familias de variaciones + sección Variantes en el detalle de ejercicio",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "5fe8a70"
+            },
+            {
+              "description": "Retos por ejercicio: crea un reto sobre cualquier ejercicio del catálogo",
+              "scope": "challenges",
+              "breaking": false,
+              "hash": "9880217"
+            },
+            {
+              "description": "Variantes agrupadas por nivel (más fáciles/mismo nivel/más difíciles) con fallback a similares",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "3d80317"
+            },
+            {
+              "description": "Filtro \"Sin equipo\" + sección de ejercicios relacionados (no variaciones)",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "8d12a1c"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "8 ejercicios (p. ej. Muscle up) mostraban su descripción en inglés con la app en español",
+              "scope": "catalog",
+              "breaking": false,
+              "hash": "41d2182"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.7",
+      "date": "2026-06-24",
+      "summary": {
+        "es": "Cuando el análisis de una foto de comida falla, ahora ves el error real en vez de un fallo silencioso.",
+        "en": "When a meal-photo analysis fails, you now see the real error instead of a silent failure."
+      },
+      "highlights": [
+        {
+          "icon": "🐛",
+          "type": "fix",
+          "title": {
+            "es": "Errores de análisis de comida más claros",
+            "en": "Clearer meal-analysis errors"
+          },
+          "body": {
+            "es": "Si el análisis de una foto de comida falla, la app te muestra el mensaje real del error para que sepas qué pasó. Además, los fallos se reportan automáticamente para corregirlos antes.",
+            "en": "If a meal-photo analysis fails, the app shows the real error message so you know what happened. Failures are also reported automatically so they get fixed sooner."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Mensaje de error real al fallar el análisis de fotos de comida + reporte automático a Sentry",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "c32f0cd"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.6",
+      "date": "2026-06-24",
+      "summary": {
+        "es": "Elige el tema de la app —claro, oscuro o automático— y reabre las novedades cuando quieras para ver todas las versiones.",
+        "en": "Pick the app theme —light, dark or automatic— and reopen what's new anytime to browse every version."
+      },
+      "highlights": [
+        {
+          "icon": "🌗",
+          "type": "feat",
+          "title": {
+            "es": "Tema claro y oscuro",
+            "en": "Light & dark theme"
+          },
+          "body": {
+            "es": "Cambia entre modo claro, oscuro o el del sistema desde tu perfil. Tu elección se recuerda al reabrir la app.",
+            "en": "Switch between light, dark or system mode from your profile. Your choice is remembered next time you open the app."
+          }
+        },
+        {
+          "icon": "🕑",
+          "type": "feat",
+          "title": {
+            "es": "Historial de novedades",
+            "en": "What's-new history"
+          },
+          "body": {
+            "es": "Abre las novedades cuando quieras desde tu perfil y revisa todas las versiones anteriores.",
+            "en": "Open what's new anytime from your profile and review every previous version."
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "date": "2026-06-24",
+      "summary": {
+        "es": "Circuitos y entrenos cronometrados, importa datos de tu reloj y comparte tu nutrición con estilo.",
+        "en": "Circuits and timed workouts, smartwatch data import, and richer nutrition sharing."
+      },
+      "highlights": [
+        {
+          "icon": "🔁",
+          "type": "feat",
+          "title": {
+            "es": "Circuitos en sesión libre",
+            "en": "Circuits in free sessions"
+          },
+          "body": {
+            "es": "Arma circuitos con rondas, descanso entre ejercicios y entre rondas — y entrénalos con un cronómetro a pantalla completa.",
+            "en": "Build circuits with rounds, rest between exercises and between rounds — then train them with a full-screen timer."
+          }
+        },
+        {
+          "icon": "⏱️",
+          "type": "feat",
+          "title": {
+            "es": "Entrenos cronometrados",
+            "en": "Timed workouts"
+          },
+          "body": {
+            "es": "Modo cronometrado: define el tiempo de trabajo y descanso de cada ejercicio y deja que la app te guíe.",
+            "en": "Timed mode: set work and rest seconds per exercise and let the app guide you through it."
+          }
+        },
+        {
+          "icon": "⌚",
+          "type": "feat",
+          "title": {
+            "es": "Importa datos de tu reloj",
+            "en": "Smartwatch import"
+          },
+          "body": {
+            "es": "Conecta Health Connect para traer pasos, sueño, frecuencia cardíaca, peso y más a tu calendario y nutrición.",
+            "en": "Connect Health Connect to bring steps, sleep, heart rate, weight and more into your calendar and nutrition."
+          }
+        },
+        {
+          "icon": "📤",
+          "type": "feat",
+          "title": {
+            "es": "Comparte tu nutrición",
+            "en": "Nutrition share cards"
+          },
+          "body": {
+            "es": "Nuevas tarjetas de nutrición para compartir tu día con las miniaturas, nombres y macros de cada comida.",
+            "en": "New nutrition cards to share your day with each meal's thumbnail, name and macros."
+          }
+        },
+        {
+          "icon": "🗺️",
+          "type": "fix",
+          "title": {
+            "es": "Mapas de cardio al compartir",
+            "en": "Cardio share maps"
+          },
+          "body": {
+            "es": "Arreglado el mapa en blanco al compartir tus sesiones de cardio: la ruta vuelve a verse.",
+            "en": "Fixed the blank map when sharing cardio sessions — your route shows up again."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Circuit & timed (cronometrado) sessions in free session",
+              "scope": "free-session",
+              "breaking": false,
+              "hash": "c845049"
+            },
+            {
+              "description": "Health Connect smartwatch import wired into calendar/nutrition/sessions",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "e152a42"
+            },
+            {
+              "description": "Nutrition meal-timing (eaten_at/duration) + day-rollover + shared quality score",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "c845049"
+            },
+            {
+              "description": "Rich nutrition share cards with meal thumbnails, names & macros",
+              "scope": "share",
+              "breaking": false,
+              "hash": "c845049"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Fix blank route map on cardio share cards (CARTO dark_all)",
+              "scope": "share",
+              "breaking": false,
+              "hash": "c845049"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "date": "2026-06-22",
+      "summary": {
+        "es": "Calendario unificado, horario de comidas y un repaso completo de tus sesiones pasadas.",
+        "en": "A unified calendar, meal timing, and a full look back at your past sessions."
+      },
+      "highlights": [
+        {
+          "icon": "📅",
+          "type": "feat",
+          "title": {
+            "es": "Calendario unificado",
+            "en": "Unified calendar"
+          },
+          "body": {
+            "es": "Ve toda tu actividad — entrenos, cardio, comidas, sueño, agua y peso — en una sola vista mensual.",
+            "en": "See all your activity — workouts, cardio, meals, sleep, water and weight — in one monthly view."
+          }
+        },
+        {
+          "icon": "⏱️",
+          "type": "feat",
+          "title": {
+            "es": "Horario de comidas",
+            "en": "Meal timing"
+          },
+          "body": {
+            "es": "Registra cuándo comes y cuánto dura cada comida, con una puntuación diaria de calidad nutricional.",
+            "en": "Log when you eat and how long each meal lasts, with a daily nutrition-quality score."
+          }
+        },
+        {
+          "icon": "📖",
+          "type": "feat",
+          "title": {
+            "es": "Detalle de sesiones pasadas",
+            "en": "Past-session details"
+          },
+          "body": {
+            "es": "Toca cualquier entreno o cardio anterior para ver el desglose completo: series, reps, ruta y mapa.",
+            "en": "Tap any past workout or cardio to see the full breakdown: sets, reps, route and map."
+          }
+        },
+        {
+          "icon": "☰",
+          "type": "feat",
+          "title": {
+            "es": "Menú de acceso rápido",
+            "en": "Quick-access menu"
+          },
+          "body": {
+            "es": "Un nuevo menú ☰ te lleva en un toque a sesiones libres, comunidad, carreras y recordatorios.",
+            "en": "A new ☰ menu takes you in one tap to free sessions, community, races and reminders."
+          }
+        },
+        {
+          "icon": "💾",
+          "type": "feat",
+          "title": {
+            "es": "Plantillas de sesión libre",
+            "en": "Free-session templates"
+          },
+          "body": {
+            "es": "Guarda tus sesiones de IA y reutilízalas cuando quieras, sin volver a generarlas.",
+            "en": "Save your AI free sessions and reuse them anytime — no need to regenerate."
+          }
+        },
+        {
+          "icon": "🎬",
+          "type": "feat",
+          "title": {
+            "es": "Ejercicios más claros",
+            "en": "Clearer exercise guides"
+          },
+          "body": {
+            "es": "Los ejercicios ahora incluyen indicaciones de tempo y mejores demos para cuidar tu técnica.",
+            "en": "Exercises now include tempo cues and clearer demo media to keep your form sharp."
+          }
+        },
+        {
+          "icon": "🔔",
+          "type": "fix",
+          "title": {
+            "es": "Controles en pantalla bloqueada",
+            "en": "Lock-screen controls"
+          },
+          "body": {
+            "es": "Tu entreno y cardio en vivo ahora se ven y se controlan desde la pantalla bloqueada (incl. Xiaomi/MIUI).",
+            "en": "Your live workout and cardio now stay visible and controllable from the lock screen (incl. Xiaomi/MIUI)."
+          }
+        },
+        {
+          "icon": "⚡",
+          "type": "perf",
+          "title": {
+            "es": "App más fluida",
+            "en": "Smoother app"
+          },
+          "body": {
+            "es": "Repaso de rendimiento en varias pantallas para que todo vaya más ligero.",
+            "en": "A performance sweep across several screens so everything feels lighter."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Unified daily-activity calendar (web + native)",
+              "scope": "calendar",
+              "breaking": false,
+              "hash": "7d841f9"
+            },
+            {
+              "description": "Meal-timing, day-rollover & quality scoring",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": "559d478"
+            },
+            {
+              "description": "Past-session detail views + web/native parity",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "0a2ce6b"
+            },
+            {
+              "description": "Quick-access hamburger menu",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "cd6976f"
+            },
+            {
+              "description": "Save & reuse free sessions as templates",
+              "scope": "free-session",
+              "breaking": false,
+              "hash": "770c328"
+            },
+            {
+              "description": "Exercise normalization, universal PRs, tempo & structured media",
+              "scope": "exercise-data",
+              "breaking": false,
+              "hash": "4e818a9"
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Show workout & cardio live notifications on the lock screen (Xiaomi/MIUI)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "943f558"
+            }
+          ]
+        },
+        {
+          "label": "Rendimiento",
+          "emoji": "⚡",
+          "type": "perf",
+          "items": [
+            {
+              "description": "Apply Vercel RN/React best-practice sweep (7 files)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": "34ab5e6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "date": "2026-06-19",
+      "summary": {
+        "es": "Notificaciones push y más actividad social.",
+        "en": "Push notifications and richer social activity."
+      },
+      "highlights": [
+        {
+          "icon": "🔔",
+          "type": "feat",
+          "title": {
+            "es": "Notificaciones push",
+            "en": "Push notifications"
+          },
+          "body": {
+            "es": "Recibe avisos cuando tus amigos logran rachas, terminan entrenos o te dan un toque.",
+            "en": "Get notified when friends hit streaks, finish workouts or send you a nudge."
+          }
+        },
+        {
+          "icon": "👥",
+          "type": "feat",
+          "title": {
+            "es": "Actividad de amigos",
+            "en": "Friend activity"
+          },
+          "body": {
+            "es": "Las rachas, logros y entrenos de tus amigos ahora aparecen en tu feed y notificaciones.",
+            "en": "Friend streaks, achievements and workouts now show up in your feed and notifications."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Social notifications + direct FCM push",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.2",
+      "date": "2026-06-17",
+      "summary": {
+        "es": "Feed de actividad, tarjetas para compartir y un final de sesión con más chispa.",
+        "en": "An activity feed, shareable cards, and a more delightful session finish."
+      },
+      "highlights": [
+        {
+          "icon": "🏠",
+          "type": "feat",
+          "title": {
+            "es": "Feed de actividad",
+            "en": "Activity feed"
+          },
+          "body": {
+            "es": "Ve la actividad reciente de tus amigos y la tuya en el inicio, con búsqueda y filtros de programas.",
+            "en": "See recent friend and personal activity on Home, with program search and filters."
+          }
+        },
+        {
+          "icon": "🎉",
+          "type": "feat",
+          "title": {
+            "es": "Final de sesión con chispa",
+            "en": "Session-complete delight"
+          },
+          "body": {
+            "es": "Confetti, frases dinámicas y animaciones de tiempos al terminar tu entreno.",
+            "en": "Confetti, dynamic taglines and timing animations when you finish a workout."
+          }
+        },
+        {
+          "icon": "📤",
+          "type": "feat",
+          "title": {
+            "es": "Tarjetas para compartir",
+            "en": "Shareable cards"
+          },
+          "body": {
+            "es": "Comparte tu racha y el resumen de tu sesión como imagen.",
+            "en": "Share your streak and session summary as an image."
+          }
+        },
+        {
+          "icon": "🔑",
+          "type": "fix",
+          "title": {
+            "es": "Arreglo de inicio con Google",
+            "en": "Google login fix"
+          },
+          "body": {
+            "es": "Soluciona el cuelgue infinito al iniciar sesión con Google en Honor/MagicOS.",
+            "en": "Fixes the infinite hang when signing in with Google on Honor/MagicOS."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Home activity feed + programs search/filters",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Session-complete delight — confetti, dynamic tagline, timing anims",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Shareable streak & session cards",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Public user profile route /u/[id]",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Durable offline queue for water logging",
+              "scope": "core",
+              "breaking": false,
+              "hash": ""
+            }
+          ]
+        },
+        {
+          "label": "Correcciones",
+          "emoji": "🐛",
+          "type": "fix",
+          "items": [
+            {
+              "description": "Google login via deep-link code flow (fixes infinite hang on Honor/MagicOS)",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Guard referral hooks so session create doesn't 400",
+              "scope": "pb",
+              "breaking": false,
+              "hash": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "2026-06-15",
+      "summary": {
+        "es": "Comentarios renovados con push, recordatorios locales y mejor rendimiento.",
+        "en": "Redesigned comments with push, local reminders, and better performance."
+      },
+      "highlights": [
+        {
+          "icon": "💬",
+          "type": "feat",
+          "title": {
+            "es": "Comentarios renovados",
+            "en": "Redesigned comments"
+          },
+          "body": {
+            "es": "Nueva interfaz de comentarios con teclado nativo y notificaciones push para comentarios y reacciones.",
+            "en": "A new comments UI with native keyboard and push notifications for comments and reactions."
+          }
+        },
+        {
+          "icon": "⏰",
+          "type": "feat",
+          "title": {
+            "es": "Recordatorios locales",
+            "en": "Local reminders"
+          },
+          "body": {
+            "es": "Programa recordatorios de entreno directamente en tu teléfono.",
+            "en": "Schedule workout reminders right on your phone."
+          }
+        },
+        {
+          "icon": "⚡",
+          "type": "perf",
+          "title": {
+            "es": "Mejor rendimiento de datos",
+            "en": "Data performance"
+          },
+          "body": {
+            "es": "Carga y sincronización de datos más rápidas.",
+            "en": "Faster data loading and sync."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Redesign comments UI + native keyboard + Expo push for comments/reactions",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "Local reminders + nutrition/profile polish",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-06-13",
+      "summary": {
+        "es": "Primera versión de la app móvil: onboarding, programas, nutrición con IA y sesiones guiadas.",
+        "en": "The first mobile release: onboarding, programs, AI nutrition and guided sessions."
+      },
+      "highlights": [
+        {
+          "icon": "🚀",
+          "type": "feat",
+          "title": {
+            "es": "Primera versión móvil",
+            "en": "First mobile release"
+          },
+          "body": {
+            "es": "La app de GHD Spor llega a Android con tu programa, sesiones y progreso.",
+            "en": "The GHD Spor app arrives on Android with your program, sessions and progress."
+          }
+        },
+        {
+          "icon": "🧭",
+          "type": "feat",
+          "title": {
+            "es": "Onboarding inteligente",
+            "en": "Smart onboarding"
+          },
+          "body": {
+            "es": "Te emparejamos con los programas ideales según tu nivel y objetivos.",
+            "en": "We match you with the right programs based on your level and goals."
+          }
+        },
+        {
+          "icon": "🍎",
+          "type": "feat",
+          "title": {
+            "es": "Registro de comidas con IA",
+            "en": "AI meal logging"
+          },
+          "body": {
+            "es": "Registra comidas describiéndolas en texto y deja que la IA calcule los macros.",
+            "en": "Log meals by describing them in text and let AI estimate the macros."
+          }
+        },
+        {
+          "icon": "🏋️",
+          "type": "feat",
+          "title": {
+            "es": "Sesiones guiadas",
+            "en": "Guided sessions"
+          },
+          "body": {
+            "es": "Entrena con sesiones paso a paso que respetan tus articulaciones lesionadas.",
+            "en": "Train with step-by-step sessions that respect your injured joints."
+          }
+        }
+      ],
+      "groups": [
+        {
+          "label": "Nuevas funciones",
+          "emoji": "✨",
+          "type": "feat",
+          "items": [
+            {
+              "description": "Initial Android release: onboarding, program matching, sessions, profile",
+              "scope": "mobile",
+              "breaking": false,
+              "hash": ""
+            },
+            {
+              "description": "AI text-based meal logging",
+              "scope": "nutrition",
+              "breaking": false,
+              "hash": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

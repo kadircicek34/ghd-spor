@@ -1,0 +1,523 @@
+/// <reference path="../pb_data/types.d.ts" />
+
+/**
+ * Notification service — centralized server-side notification creation.
+ *
+ * Creates in-app notifications and sends push notifications when
+ * social events happen. Runs with admin access ($app), bypassing
+ * API rules (notifications.createRule is null).
+ *
+ * IMPORTANTE: cada handler corre en un runtime JSVM AISLADO y NO ve las
+ * funciones top-level de este archivo. Por eso los helpers viven en
+ * ./utils/notifications.js y cada handler hace
+ *   require(`${__hooks}/utils/notifications.js`)
+ * dentro de su cuerpo. (Antes eran globales → "ReferenceError: X is not defined"
+ * en cada handler → atrapado (200 sin notif) o propagado (400). Ver utils/.)
+ *
+ * IMPORTANTE (2): cada handler abre con `e.next()`. Los hooks de PocketBase son
+ * una cadena tipo middleware — un handler que no encadena corta la cadena y los
+ * handlers que OTROS ficheros registraron para esa misma coleccion no corren
+ * jamas, sin un solo error en el log. Este fichero se carga antes que el resto
+ * por orden alfabetico, asi que se los comia todos: se descubrio en #412, cuando
+ * los tres hooks de `workout_stats.pb.js` no se ejecutaban nunca. Va al
+ * principio del cuerpo y no al final porque casi todos tienen `return` tempranos.
+ *
+ * To add a new notification type:
+ * 1. Add a handler function below (require the helpers inside its body).
+ *    - 1-to-1 (notify a single target): helpers.createNotification / createSelfNotification + sendPush
+ *    - broadcast (notify a user's followers): helpers.notifyFollowers(actorId, type, refId, data, push)
+ * 2. Register it with onRecordAfterCreateSuccess/onRecordAfterUpdateSuccess.
+ * 3. Pass the type as the last arg to sendPush so push respects notification_prefs.
+ * 4. Map the type → preference category in utils/notifications.js (categoryForType)
+ *    and add the toggle in migration 1776800000 + useNotificationPrefs if it's a new category.
+ * 5. Add the type to NotificationType (packages/core/types/index.ts AND
+ *    packages/core/hooks/useNotifications.ts).
+ * 6. Render it: web apps/web/src/pages/NotificationsPage.tsx (message + route) and
+ *    mobile apps/mobile/src/app/notifications.tsx (message + route).
+ * 7. Add i18n keys (notif.*) in packages/core/locales/{es,en}/translation.json.
+ *
+ * Current types: follow, reaction, comment, comment_reply, challenge_join,
+ * challenge_complete, achievement, streak, referral_signup, referral_bonus,
+ * friend_streak, friend_achievement, friend_workout, friend_joined.
+ */
+
+console.log("[notification_service] hook file loaded")
+
+// ── Follow notifications ─────────────────────────────────────────────────────
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var followerId = e.record.getString("follower")
+    var followingId = e.record.getString("following")
+
+    if (!followerId || !followingId) return
+
+    var followerName = helpers.getUserName(followerId)
+
+    // #422: contra una cuenta privada esto es una SOLICITUD, no un seguidor.
+    // El status lo fija `follow_requests.pb.js` en el create, así que aquí ya
+    // está normalizado. Decirle "tienes un nuevo seguidor" a quien solo ha
+    // recibido una solicitud es mentir sobre quién puede ver su actividad, que
+    // es justo lo que #422 va de arreglar.
+    var pending = e.record.getString("status") === "pending"
+
+    helpers.createNotification(
+      followingId,
+      pending ? "follow_request" : "follow",
+      followerId,
+      followerId,
+      "user",
+      { followerName: followerName }
+    )
+
+    helpers.sendPush(
+      followingId,
+      {
+        es: pending
+          ? (followerName || "Alguien") + " quiere seguirte"
+          : (followerName || "Alguien") + " te sigue",
+        en: pending
+          ? (followerName || "Someone") + " wants to follow you"
+          : (followerName || "Someone") + " is following you",
+      },
+      {
+        es: pending ? "Toca para aceptar o rechazar" : "Tienes un nuevo seguidor",
+        en: pending ? "Tap to accept or decline" : "You have a new follower",
+      },
+      "/u/" + followerId,
+      pending ? "follow_request" : "follow",
+      followerId
+    )
+  } catch (err) {
+    console.log("[notif] follow hook error:", err)
+  }
+}, "follows")
+
+// ── Reaction notifications ───────────────────────────────────────────────────
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var reactorId = e.record.getString("reactor")
+    var sessionId = e.record.getString("session_id")
+    var emoji = e.record.getString("emoji") || "🔥"
+
+    if (!reactorId || !sessionId) return
+
+    var sessions = require(`${__hooks}/utils/sessions.js`)
+    var ownerId = sessions.findSessionOwner($app, sessionId)
+
+    if (!ownerId || ownerId === reactorId) return
+
+    var reactorName = helpers.getUserName(reactorId)
+
+    helpers.createNotification(
+      ownerId,
+      "reaction",
+      reactorId,
+      sessionId,
+      "session",
+      { emoji: emoji, reactorName: reactorName }
+    )
+
+    helpers.sendPush(
+      ownerId,
+      { es: (reactorName || "Alguien") + " " + emoji, en: (reactorName || "Someone") + " " + emoji },
+      { es: "Reacciono a tu sesion", en: "Reacted to your session" },
+      "/feed?session=" + sessionId,
+      "reaction",
+      reactorId
+    )
+  } catch (err) {
+    console.log("[notif] reaction hook error:", err)
+  }
+}, "feed_reactions")
+
+// ── Comment notifications ────────────────────────────────────────────────────
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var authorId = e.record.getString("author")
+    var sessionId = e.record.getString("session_id")
+    var parentId = e.record.getString("parent_id")
+    var commentBody = e.record.getString("text") || ""
+    var preview = commentBody.length > 60 ? commentBody.substring(0, 60) + "..." : commentBody
+    // id del comentario recién creado (estilo getString, robusto en el JSVM).
+    var newCommentId = e.record.getString("id")
+
+    if (!authorId || !sessionId) return
+
+    var authorName = helpers.getUserName(authorId)
+
+    // If it's a reply, notify the parent comment's author
+    if (parentId) {
+      try {
+        var parentComment = $app.findRecordById("comments", parentId)
+        var parentAuthorId = parentComment.getString("author")
+        if (parentAuthorId && parentAuthorId !== authorId) {
+          helpers.createNotification(
+            parentAuthorId,
+            "comment_reply",
+            authorId,
+            sessionId,
+            "session",
+            // commentId = la respuesta recién creada → el deep-link la resalta en el sheet.
+            { authorName: authorName, preview: preview, commentId: newCommentId }
+          )
+          helpers.sendPush(
+            parentAuthorId,
+            {
+              es: (authorName || "Alguien") + " respondio tu comentario",
+              en: (authorName || "Someone") + " replied to your comment",
+            },
+            preview,
+            "/feed?session=" + sessionId + "&comment=" + newCommentId,
+            "comment_reply",
+            authorId
+          )
+        }
+      } catch (err) { /* parent not found */ }
+    }
+
+    // Notify the session owner.
+    try {
+      var sessions = require(`${__hooks}/utils/sessions.js`)
+      var ownerId = sessions.findSessionOwner($app, sessionId)
+      if (!ownerId) return
+      if (ownerId && ownerId !== authorId) {
+        // Avoid double notification if owner is also the parent comment author
+        var skipOwner = false
+        if (parentId) {
+          try {
+            var pc = $app.findRecordById("comments", parentId)
+            if (pc.getString("author") === ownerId) skipOwner = true
+          } catch (err) { /* ignore */ }
+        }
+        if (!skipOwner) {
+          helpers.createNotification(
+            ownerId,
+            "comment",
+            authorId,
+            sessionId,
+            "session",
+            // commentId = el comentario recién creado → el deep-link lo resalta en el sheet.
+            { authorName: authorName, preview: preview, commentId: newCommentId }
+          )
+          helpers.sendPush(
+            ownerId,
+            {
+              es: (authorName || "Alguien") + " comento tu sesion",
+              en: (authorName || "Someone") + " commented on your session",
+            },
+            preview,
+            "/feed?session=" + sessionId + "&comment=" + newCommentId,
+            "comment",
+            authorId
+          )
+        }
+      }
+    } catch (err) { /* session not found */ }
+  } catch (err) {
+    console.log("[notif] comment hook error:", err)
+  }
+}, "comments")
+
+// ── Comment reaction notifications ──────────────────────────────────────────
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    const helpers = require(`${__hooks}/utils/notifications.js`)
+    const reactorId = e.record.getString("reactor")
+    const commentId = e.record.getString("comment_id")
+    const emoji = e.record.getString("emoji") || "❤️"
+
+    if (!reactorId || !commentId) return
+
+    let authorId = ""
+    let sessionId = ""
+    let commentPreview = ""
+    try {
+      const comment = $app.findRecordById("comments", commentId)
+      authorId = comment.getString("author")
+      sessionId = comment.getString("session_id")
+      const body = comment.getString("text") || ""
+      commentPreview = body.length > 60 ? body.substring(0, 60) + "..." : body
+    } catch (err) {
+      return
+    }
+
+    if (!authorId || authorId === reactorId) return
+
+    const reactorName = helpers.getUserName(reactorId)
+
+    // reference_id = sessionId (el post que contiene el comentario), no el
+    // commentId: así el deep-link abre el post y lo resalta igual que el resto de
+    // reacciones. commentId queda en data para resaltar el comentario concreto en
+    // el sheet, y commentPreview para mostrar a cuál se reaccionó en la lista.
+    helpers.createNotification(
+      authorId,
+      "reaction",
+      reactorId,
+      sessionId,
+      "session",
+      { emoji: emoji, reactorName: reactorName, commentId: commentId, commentPreview: commentPreview, onComment: true }
+    )
+
+    helpers.sendPush(
+      authorId,
+      { es: (reactorName || "Alguien") + " " + emoji, en: (reactorName || "Someone") + " " + emoji },
+      { es: "Reaccionó a tu comentario", en: "Reacted to your comment" },
+      sessionId ? ("/feed?session=" + sessionId + "&comment=" + commentId) : "/feed",
+      "reaction",
+      reactorId
+    )
+  } catch (err) {
+    console.log("[notif] comment_reaction hook error:", err)
+  }
+}, "comment_reactions")
+
+// ── Challenge join notifications ─────────────────────────────────────────────
+// La API rule de challenge_participants (@request.body.user = @request.auth.id)
+// solo permite crearse la participación a uno mismo, así que no existe la
+// invitación por terceros — ver #261 si algún día se implementa de verdad.
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var userId = e.record.getString("user")
+    var challengeId = e.record.getString("challenge")
+
+    if (!userId || !challengeId) return
+
+    var creatorId = ""
+    var challengeTitle = ""
+    try {
+      var challenge = $app.findRecordById("challenges", challengeId)
+      creatorId = challenge.getString("creator")
+      challengeTitle = challenge.getString("title") || "un desafio"
+    } catch (err) {
+      return
+    }
+
+    // Notify the challenge creator that someone joined
+    if (!creatorId || creatorId === userId) return
+
+    var userName = helpers.getUserName(userId)
+
+    helpers.createNotification(
+      creatorId,
+      "challenge_join",
+      userId,
+      challengeId,
+      "challenge",
+      { userName: userName, challengeTitle: challengeTitle }
+    )
+
+    helpers.sendPush(
+      creatorId,
+      { es: (userName || "Alguien") + " se unio a tu desafio", en: (userName || "Someone") + " joined your challenge" },
+      challengeTitle,
+      "/challenges/" + challengeId,
+      "challenge_join",
+      userId
+    )
+  } catch (err) {
+    console.log("[notif] challenge_join hook error:", err)
+  }
+}, "challenge_participants")
+
+// ── Challenge complete notifications ─────────────────────────────────────────
+
+onRecordAfterUpdateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var status = e.record.getString("status")
+    var oldStatus = e.record.original().getString("status")
+
+    // 'ended' es el valor del dominio (ChallengeStatus en core); "completed"
+    // solo pudo llegar escrito a mano — tratarlo como ya-terminado evita
+    // re-notificar si una fila legacy se normaliza a 'ended' (#312).
+    if (status !== "ended" || oldStatus === "ended" || oldStatus === "completed") return
+
+    // getString("id"), no getId(): el JSVM de PB no expone getId() en Record
+    // (mismo gotcha que el handler de comments más arriba).
+    var challengeId = e.record.getString("id")
+    var creatorId = e.record.getString("creator")
+    var challengeTitle = e.record.getString("title") || "Desafio"
+
+    var participants = []
+    try {
+      participants = $app.findRecordsByFilter(
+        "challenge_participants",
+        "challenge = {:cid}",
+        "",
+        100,
+        0,
+        { cid: challengeId }
+      )
+    } catch (err) {
+      return
+    }
+
+    // Collect all user IDs; el push sale en UNA llamada al final (#481) — antes
+    // era un $http.send con timeout de 10 s por participante, dentro de este hook.
+    var notified = {}
+    var recipients = []
+    for (var i = 0; i < participants.length; i++) {
+      var uid = participants[i].getString("user")
+      if (uid && !notified[uid]) {
+        notified[uid] = true
+        helpers.createSelfNotification(uid, "challenge_complete", challengeId, "challenge", { challengeTitle: challengeTitle })
+        recipients.push(uid)
+      }
+    }
+    // Also notify creator if not already a participant
+    if (creatorId && !notified[creatorId]) {
+      helpers.createSelfNotification(creatorId, "challenge_complete", challengeId, "challenge", { challengeTitle: challengeTitle })
+      recipients.push(creatorId)
+    }
+    helpers.sendPushBatch(
+      recipients,
+      { es: "Desafio completado!", en: "Challenge completed!" },
+      challengeTitle,
+      "/challenges/" + challengeId,
+      "challenge_complete"
+    )
+  } catch (err) {
+    console.log("[notif] challenge_complete hook error:", err)
+  }
+}, "challenges")
+
+// ── Achievement unlocked notifications ───────────────────────────────────────
+
+onRecordAfterUpdateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var unlocked = e.record.getBool("unlocked")
+    var wasUnlocked = e.record.original().getBool("unlocked")
+
+    if (!unlocked || wasUnlocked) return
+
+    var userId = e.record.getString("user")
+    var achievementId = e.record.getString("achievement")
+
+    if (!userId || !achievementId) return
+
+    var achievementName = ""
+    var achievementIcon = ""
+    try {
+      var achievement = $app.findRecordById("achievements", achievementId)
+      achievementName = achievement.getString("name") || "Logro"
+      achievementIcon = achievement.getString("icon") || "🏅"
+    } catch (err) {
+      return
+    }
+
+    helpers.createSelfNotification(userId, "achievement", achievementId, "achievement", { achievementName: achievementName, achievementIcon: achievementIcon })
+    helpers.sendPush(
+      userId,
+      achievementIcon + " " + achievementName,
+      { es: "Nuevo logro desbloqueado!", en: "New achievement unlocked!" },
+      "/profile",
+      "achievement"
+    )
+
+    // Fan-out a seguidores: "tu amigo desbloqueó un logro"
+    var achieverName = helpers.getUserName(userId)
+    helpers.notifyFollowers(
+      userId,
+      "friend_achievement",
+      achievementId,
+      { achievementName: achievementName, achievementIcon: achievementIcon },
+      {
+        title: {
+          es: (achieverName || "Tu amigo") + " desbloqueo un logro",
+          en: (achieverName || "Your friend") + " unlocked an achievement",
+        },
+        body: achievementIcon + " " + achievementName,
+        url: "/u/" + userId,
+      }
+    )
+  } catch (err) {
+    console.log("[notif] achievement hook error:", err)
+  }
+}, "user_achievements")
+
+// ── Streak milestone notifications ───────────────────────────────────────────
+// La lógica vive en utils/notifications.js (checkStreakMilestone) porque
+// workout_stats.js también la necesita: escribe la racha con SQL atómico para no
+// perder incrementos en paralelo, y el SQL no dispara este hook. Ver #412.
+
+onRecordAfterUpdateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    helpers.checkStreakMilestone(
+      e.record.getString("user"),
+      e.record.original().getInt("workout_streak_current"),
+      e.record.getInt("workout_streak_current")
+    )
+  } catch (err) {
+    console.log("[notif] streak hook error:", err)
+  }
+}, "user_stats")
+
+// ── Racha + total_sessions server-side ──────────────────────────────────────
+// Vivia aqui, solo para `circuit_sessions`. Se movio a workout_stats.pb.js
+// (+ utils/workout_stats.js) al cubrir tambien `sessions` y `cardio_sessions`
+// y crear la fila de user_stats si falta — issue #412.
+
+// ── Referral bonus notifications (first workout) ────────────────────────────
+// When a referred user completes their first session, notify the referrer.
+// checkReferralBonus vive en ./utils/notifications.js (require dentro del handler).
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var userId = e.record.getString("user")
+    if (userId) {
+      helpers.checkReferralBonus(userId)
+      helpers.notifyFriendsOnWorkout(userId)
+    }
+  } catch (err) {
+    console.log("[notif] session referral hook error:", err)
+  }
+}, "sessions")
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var userId = e.record.getString("user")
+    if (userId) {
+      helpers.checkReferralBonus(userId)
+      helpers.notifyFriendsOnWorkout(userId)
+    }
+  } catch (err) {
+    console.log("[notif] circuit referral hook error:", err)
+  }
+}, "circuit_sessions")
+
+onRecordAfterCreateSuccess(function(e) {
+  e.next() // encadenar primero — ver la nota de la cabecera (#412)
+  try {
+    var helpers = require(`${__hooks}/utils/notifications.js`)
+    var userId = e.record.getString("user")
+    if (userId) {
+      helpers.checkReferralBonus(userId)
+      helpers.notifyFriendsOnWorkout(userId)
+    }
+  } catch (err) {
+    console.log("[notif] cardio referral hook error:", err)
+  }
+}, "cardio_sessions")

@@ -1,0 +1,9 @@
+{
+  "_comment": "Traducciones es curadas para entradas wger que no traen translation es upstream (el fetch cae en es: enDesc). Aplicadas por build-exercise-catalog.mjs en ambos modos, DESPUÉS de construir la base — sobreviven a --refresh-wger. Clave = id de catálogo.",
+  "axe_hold": "Con una barra ligera, realiza un tirón explosivo empezando justo por debajo de la rótula. Eleva de forma explosiva usando las caderas, hasta la altura de los hombros. Tempo: 2111.",
+  "front_plate_raise": "Paso 1: Siéntate en una colchoneta con las piernas extendidas al frente.\nPaso 2: Sujeta un disco con ambas manos como si sostuvieras un volante, con los brazos ligeramente flexionados, frente a tus abdominales.\nPaso 3: Con las rodillas algo flexionadas, cruza los tobillos y elévalos lentamente unos centímetros del suelo.\nPaso 4: Mantén la espalda recta pero inclínate ligeramente hacia atrás para mantener el equilibrio.\nPaso 5: Exhalando, rota el torso hacia la derecha y toca el suelo con el extremo del disco.\nPaso 6: Inhala y vuelve a la posición inicial mirando al frente.\nPaso 7: Exhalando, rota el torso hacia la izquierda y toca el suelo con el extremo del disco.\nPaso 8: Inhala y vuelve a la posición inicial.\nPaso 9: Repite hasta completar la serie.",
+  "right_levator_scapulae_stretch": "A cuatro patas, eleva las rodillas ligeramente del suelo.\nCurva la espalda hacia fuera y empuja desde los hombros, como un gato que se hace grande.",
+  "right_neck_stretch": "Mira el video para entender el ejercicio.",
+  "t_bar_row": "Mantén el cuerpo recto, retrae las escápulas y lleva el pecho hacia la barra para un trabajo eficaz de espalda y tren superior.",
+  "leg_raises_pull_up_bar": "Haz flexiones con una sola mano, alternando los lados."
+}

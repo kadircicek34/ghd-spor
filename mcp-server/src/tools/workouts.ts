@@ -1,0 +1,468 @@
+import type { AppServer } from "../mcpuse/auth-bridge.js";
+import { z } from "zod";
+import { getAuthManager } from "../mcpuse/auth-bridge.js";
+import { errorResult, viewResult, PaginationSchema, ResponseFormat, daysAgo, today, toDateStr, wallClockDayStr, wallClockStamp } from "../utils.js";
+import { exerciseHistoryPropsSchema } from "../views/exercise-history.schema.js";
+import { exerciseIdFilter, listExerciseSets } from "../api/repos/index.js";
+import { groupSetsByIdentity, loadUserExerciseResolver } from "../api/exercise-identity-server.js";
+
+export function registerWorkoutTools(server: AppServer, pbUrl: string) {
+  // ──────────────────────────────────────────────────────────────
+  // LIST SESSIONS
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_list_sessions",
+      title: "List Workout Sessions",
+      description:
+        "List completed workout sessions for the authenticated user. Filter by date range, phase, or workout day. Returns sessions with date, workout key, and phase info.",
+      schema: z
+        .object({
+          ...PaginationSchema,
+          from_date: z
+            .string()
+            .optional()
+            .describe("Start date filter (YYYY-MM-DD). Defaults to 30 days ago."),
+          to_date: z
+            .string()
+            .optional()
+            .describe("End date filter (YYYY-MM-DD). Defaults to today."),
+          phase: z
+            .number()
+            .int()
+            .min(1)
+            .optional()
+            .describe("Filter by training phase number"),
+          workout_key: z
+            .string()
+            .optional()
+            .describe("Filter by workout key (e.g. 'p1_lun' for phase 1 Monday)"),
+        })
+        .strict(),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ limit, offset, from_date, to_date, phase, workout_key, response_format }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        const tz = auth.getTimezone();
+        const from = from_date ?? daysAgo(30, tz);
+        const to = to_date ?? today(tz);
+
+        const conditions = ['user = {:userId}', 'completed_at >= {:from}', 'completed_at <= {:to}'];
+        const params: Record<string, unknown> = { userId, from, to: `${to} 23:59:59` };
+        if (phase) { conditions.push('phase = {:phase}'); params.phase = phase; }
+        if (workout_key) { conditions.push('workout_key = {:workout_key}'); params.workout_key = workout_key; }
+
+        const result = await pb.collection("sessions").getList(offset / limit + 1, limit, {
+          filter: pb.filter(conditions.join(' && '), params),
+          sort: "-completed_at",
+          fields: "id,workout_key,phase,day,completed_at,note",
+        });
+
+        if (result.items.length === 0) {
+          return { content: [{ type: "text", text: "No workout sessions found for the given filters." }] };
+        }
+
+        const sessions = result.items.map((s) => ({
+          id: s.id,
+          workout_key: s.workout_key,
+          phase: s.phase,
+          day: s.day,
+          completed_at: s.completed_at,
+          note: s.note || null,
+        }));
+
+        const output = {
+          total: result.totalItems,
+          count: sessions.length,
+          from_date: from,
+          to_date: to,
+          sessions,
+        };
+
+        let text: string;
+        if (response_format === ResponseFormat.JSON) {
+          text = JSON.stringify(output, null, 2);
+        } else {
+          const lines = [
+            `# Workout Sessions (${from} → ${to})`,
+            `Found **${result.totalItems}** session(s)\n`,
+          ];
+          for (const s of sessions) {
+            // phase 0 = sesión libre/manual: no tiene fase que enseñar (#376).
+            const phaseLabel = Number(s.phase) > 0 ? `Phase ${s.phase}, ` : "";
+            lines.push(`- **${wallClockDayStr(s.completed_at, tz)}** — ${s.workout_key} (${phaseLabel}${s.day})`);
+            if (s.note) lines.push(`  > ${s.note}`);
+          }
+          text = lines.join("\n");
+        }
+
+        return { content: [{ type: "text", text }], structuredContent: output };
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+
+  // ──────────────────────────────────────────────────────────────
+  // LOG SESSION
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_log_session",
+      title: "Log Workout Session",
+      description:
+        "Record a completed workout session. The workout_key identifies which workout was done (e.g. 'p1_lun' = Phase 1 Monday, 'free_timestamp' for free sessions). Phase and day are auto-derived from the key if not provided.",
+      schema: z
+        .object({
+          workout_key: z
+            .string()
+            .describe("Workout identifier like 'p1_lun', 'p2_mie', or 'free_{timestamp}' for free sessions"),
+          phase: z.number().int().min(0).describe("Training phase number (1-4 for programs, 0 for free sessions)"),
+          day: z
+            .string()
+            .describe("Day identifier: 'lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom', or 'free'"),
+          completed_at: z
+            .string()
+            .optional()
+            .describe("Completion datetime (ISO 8601). Defaults to now."),
+          note: z.string().optional().describe("Optional note about the session"),
+          warmup_completed: z.boolean().optional().describe("Whether warmup was completed"),
+          warmup_skipped: z.boolean().optional().describe("Whether warmup was skipped"),
+          warmup_duration_seconds: z.number().optional().describe("Warmup duration in seconds"),
+          cooldown_completed: z.boolean().optional().describe("Whether cooldown was completed"),
+          cooldown_skipped: z.boolean().optional().describe("Whether cooldown was skipped"),
+          cooldown_duration_seconds: z.number().optional().describe("Cooldown duration in seconds"),
+        })
+        .strict(),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async ({ workout_key, phase, day, completed_at, note, warmup_completed, warmup_skipped, warmup_duration_seconds, cooldown_completed, cooldown_skipped, cooldown_duration_seconds }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        const tz = auth.getTimezone();
+        const data: Record<string, unknown> = {
+          user: userId,
+          workout_key,
+          phase,
+          day,
+          // Wall-clock del usuario (no UTC): ver wallClockStamp.
+          completed_at: wallClockStamp(completed_at, tz),
+          note: note ?? "",
+        };
+        if (warmup_completed !== undefined) data.warmup_completed = warmup_completed;
+        if (warmup_skipped !== undefined) data.warmup_skipped = warmup_skipped;
+        if (warmup_duration_seconds !== undefined) data.warmup_duration_seconds = warmup_duration_seconds;
+        if (cooldown_completed !== undefined) data.cooldown_completed = cooldown_completed;
+        if (cooldown_skipped !== undefined) data.cooldown_skipped = cooldown_skipped;
+        if (cooldown_duration_seconds !== undefined) data.cooldown_duration_seconds = cooldown_duration_seconds;
+
+        const record = await pb.collection("sessions").create(data);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Session logged! **${workout_key}** completed on ${wallClockDayStr(record.completed_at, tz)} (Phase ${phase})`,
+            },
+          ],
+          structuredContent: { id: record.id, workout_key, phase, day, completed_at: record.completed_at },
+        };
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+
+  // ──────────────────────────────────────────────────────────────
+  // DELETE SESSION
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_delete_session",
+      title: "Delete Workout Session",
+      description: "Delete a logged workout session by its ID. Use cal_list_sessions to find the session ID first.",
+      schema: z
+        .object({
+          session_id: z.string().describe("The session record ID to delete"),
+        })
+        .strict(),
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ session_id }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        // Verify ownership before deletion
+        const record = await pb.collection("sessions").getOne(session_id);
+        if (record.user !== userId) {
+          return errorResult("Access denied: this session does not belong to you.");
+        }
+
+        await pb.collection("sessions").delete(session_id);
+        return {
+          content: [{ type: "text", text: `Session \`${session_id}\` deleted successfully.` }],
+        };
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+
+  // ──────────────────────────────────────────────────────────────
+  // LIST SETS LOG
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_list_sets",
+      title: "List Exercise Sets Log",
+      description:
+        "List logged exercise sets with reps and notes. Filter by exercise, date range, or workout. Useful for tracking personal records and progression.",
+      schema: z
+        .object({
+          ...PaginationSchema,
+          exercise_id: z
+            .string()
+            .optional()
+            .describe(
+              "Filter by exercise ID (e.g. 'pushup_std', 'pullup'). Matches every id that resolves to the same exercise: "
+              + "the catalog id, retired aliases and the active program's slot keys.",
+            ),
+          from_date: z
+            .string()
+            .optional()
+            .describe("Start date filter (YYYY-MM-DD). Defaults to 30 days ago."),
+          to_date: z
+            .string()
+            .optional()
+            .describe("End date filter (YYYY-MM-DD). Defaults to today."),
+          workout_key: z.string().optional().describe("Filter by workout key"),
+        })
+        .strict(),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ limit, offset, exercise_id, from_date, to_date, workout_key, response_format }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        const tz = auth.getTimezone();
+        const from = from_date ?? daysAgo(30, tz);
+        const to = to_date ?? today(tz);
+
+        // Identidad resuelta (#702): el filtro por ejercicio abarca todos los
+        // ids que son el mismo ejercicio, y el listado se agrupa por identidad.
+        const resolver = await loadUserExerciseResolver(pb, userId);
+
+        const conditions = ['user = {:userId}', 'logged_at >= {:from}', 'logged_at <= {:to}'];
+        const params: Record<string, unknown> = { userId, from, to: `${to} 23:59:59` };
+        if (exercise_id) {
+          const { expr, params: idParams } = exerciseIdFilter(resolver.aliasesOf(exercise_id).ids);
+          conditions.push(expr);
+          Object.assign(params, idParams);
+        }
+        if (workout_key) { conditions.push('workout_key = {:workout_key}'); params.workout_key = workout_key; }
+
+        const result = await pb.collection("sets_log").getList(offset / limit + 1, limit, {
+          filter: pb.filter(conditions.join(' && '), params),
+          sort: "-logged_at",
+          fields: "id,exercise_id,workout_key,reps,note,logged_at",
+        });
+
+        if (result.items.length === 0) {
+          return { content: [{ type: "text", text: "No sets found for the given filters." }] };
+        }
+
+        const sets = result.items.map((s) => {
+          const identity = resolver.resolve(String(s.exercise_id ?? ""), String(s.workout_key ?? ""));
+          return {
+            id: s.id,
+            exercise_id: s.exercise_id,
+            // La identidad que la app enseña para este id (#702): clave y nombre.
+            exercise_key: identity.key,
+            exercise_name: identity.name,
+            workout_key: s.workout_key,
+            reps: s.reps,
+            note: s.note || null,
+            logged_at: s.logged_at,
+          };
+        });
+
+        const output = { total: result.totalItems, count: sets.length, sets };
+
+        let text: string;
+        if (response_format === ResponseFormat.JSON) {
+          text = JSON.stringify(output, null, 2);
+        } else {
+          const lines = [`# Sets Log (${from} → ${to})`, `Found **${result.totalItems}** set(s)\n`];
+          // Un grupo por identidad resuelta, no por id crudo: `pushup` y
+          // `pushup_std` (o la clave de slot del programa) son el mismo ejercicio.
+          for (const g of groupSetsByIdentity(sets, resolver)) {
+            const ids = g.exercise_ids.length > 1 || g.exercise_ids[0] !== g.key ? ` _(${g.exercise_ids.join(", ")})_` : "";
+            lines.push(`\n## ${g.name}${ids}`);
+            for (const s of g.sets) {
+              lines.push(`- **${wallClockDayStr(s.logged_at, tz)}** — ${s.reps}${g.is_timer ? " s" : " reps"}${s.note ? ` _(${s.note})_` : ""}`);
+            }
+          }
+          text = lines.join("\n");
+        }
+
+        return { content: [{ type: "text", text }], structuredContent: output };
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+
+  // ──────────────────────────────────────────────────────────────
+  // LOG SET
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_log_set",
+      title: "Log Exercise Set",
+      description:
+        "Record a completed exercise set with reps. Use this to track your performance for individual exercises within a workout.",
+      schema: z
+        .object({
+          exercise_id: z
+            .string()
+            .describe("Exercise identifier (e.g. 'push-up', 'pull-up', 'dip')"),
+          workout_key: z
+            .string()
+            .describe("Workout this set belongs to (e.g. 'p1_lun')"),
+          reps: z
+            .string()
+            .describe("Reps performed. Can be a number '10', range '8-10', or description '5 + 3 negatives'"),
+          note: z.string().optional().describe("Optional note (form cues, difficulty, etc.)"),
+          logged_at: z.string().optional().describe("Log datetime (ISO 8601). Defaults to now."),
+        })
+        .strict(),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async ({ exercise_id, workout_key, reps, note, logged_at }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        const tz = auth.getTimezone();
+        const record = await pb.collection("sets_log").create({
+          user: userId,
+          exercise_id,
+          workout_key,
+          reps,
+          note: note ?? "",
+          // Wall-clock del usuario (no UTC): ver wallClockStamp.
+          logged_at: wallClockStamp(logged_at, tz),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Set logged: **${exercise_id}** × ${reps}${note ? ` _(${note})_` : ""}`,
+            },
+          ],
+          structuredContent: { id: record.id, exercise_id, workout_key, reps, logged_at: record.logged_at },
+        };
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+
+  // ──────────────────────────────────────────────────────────────
+  // GET EXERCISE HISTORY
+  // ──────────────────────────────────────────────────────────────
+  server.tool(
+    {
+      name: "cal_get_exercise_history",
+      title: "Get Exercise History",
+      description:
+        "Get full history for a specific exercise — all logged sets grouped by date. Great for spotting progression and personal records over time.",
+      view: { name: "exercise-history" },
+      outputSchema: exerciseHistoryPropsSchema,
+      schema: z
+        .object({
+          exercise_id: z
+            .string()
+            .describe(
+              "Exercise identifier (e.g. 'pushup_std', 'pullup'). The history merges every id that resolves to the same exercise: "
+              + "the catalog id, retired aliases and the active program's slot keys.",
+            ),
+          days: z
+            .number()
+            .int()
+            .min(1)
+            .max(365)
+            .default(90)
+            .describe("How many days back to look (default 90)"),
+          response_format: z
+            .nativeEnum(ResponseFormat)
+            .default(ResponseFormat.MARKDOWN)
+            .describe("Output format"),
+        })
+        .strict(),
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ exercise_id, days, response_format }, ctx) => {
+      try {
+        const auth = getAuthManager(ctx.auth, pbUrl);
+        const pb = auth.getClient();
+        const userId = auth.getUserId();
+        const tz = auth.getTimezone();
+        const from = daysAgo(days, tz);
+        // Todo el historial del ejercicio, bajo cualquiera de sus ids (#702).
+        const resolver = await loadUserExerciseResolver(pb, userId);
+        const { identity, ids } = resolver.aliasesOf(exercise_id);
+        const exercise_name = identity.resolved ? identity.name : undefined;
+        const merged = ids.length > 1 ? { exercise_ids: ids } : {};
+        const result = await listExerciseSets(pb, userId, ids, { from });
+
+        if (result.length === 0) {
+          return viewResult(
+            { exercise_id, exercise_name, ...merged, days, total_sets: 0, sessions: [] },
+            `No se encontró historial para '${exercise_name ?? exercise_id}' en los últimos ${days} días.`
+          );
+        }
+
+        // Group by date — keep reps and note separate for the widget
+        const byDate: Record<string, Array<{ reps: string; note?: string }>> = {};
+        for (const s of result) {
+          const date = wallClockDayStr(s.logged_at, tz);
+          if (!byDate[date]) byDate[date] = [];
+          byDate[date].push({ reps: s.reps as string, ...(s.note ? { note: s.note as string } : {}) });
+        }
+
+        const sessions = Object.entries(byDate).map(([date, sets]) => ({ date, sets }));
+
+        // Readable summary for non-widget clients
+        const summaryLines = [
+          `# ${exercise_name ?? exercise_id} — últimos ${days} días`,
+          `**${result.length} series** en **${sessions.length} sesiones**`
+            + (ids.length > 1 ? ` _(ids fusionados: ${ids.join(", ")})_` : "")
+            + "\n",
+        ];
+        for (const { date, sets } of sessions) {
+          const setsStr = sets.map((s) => s.reps + (s.note ? ` (${s.note})` : "")).join(", ");
+          summaryLines.push(`**${date}**: ${setsStr}`);
+        }
+        const summaryText = summaryLines.join("\n");
+
+        const props = { exercise_id, exercise_name, ...merged, days, total_sets: result.length, sessions };
+        if (response_format === ResponseFormat.JSON) {
+          return viewResult(props, JSON.stringify(props, null, 2));
+        }
+
+        return viewResult(props, summaryText);
+      } catch (err) {
+        return errorResult(err instanceof Error ? err.message : String(err));
+      }
+    }
+  );
+}

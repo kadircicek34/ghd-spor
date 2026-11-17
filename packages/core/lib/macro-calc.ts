@@ -1,0 +1,157 @@
+import type { FoodItem, PortionUnit } from '../types'
+import { UNIT_WEIGHT_GRAMS } from '../types'
+
+/** Coerce to a finite non-negative number, fallback 0 */
+const safe = (v: unknown): number => {
+  const n = Number(v)
+  return Number.isFinite(n) && n >= 0 ? n : 0
+}
+
+/**
+ * Parse a portion string like "100g", "250ml", "2 unidad" into amount + unit.
+ */
+export function parsePortionString(str: string): { amount: number; unit: PortionUnit } {
+  const s = str.trim().toLowerCase()
+
+  // Try to match number + unit (flexible: supports "175g", "175 g", "175gr", "175 gramos", etc.)
+  const match = s.match(/([\d.,]+)\s*(g(?:r(?:amos)?)?|kg|ml|l(?:itros?)?|oz|unidad(?:es)?)?/i)
+  if (match) {
+    const parsed = parseFloat(match[1].replace(',', '.'))
+    // Solo caer al default cuando NO hay número parseable: "0g" es un 0 explícito
+    // y debe respetarse (normalizeToBase100 ya protege la división por 0).
+    const amount = Number.isFinite(parsed) ? parsed : 100
+    let unit: PortionUnit = 'g'
+    const rawUnit = (match[2] || 'g').toLowerCase()
+    if (rawUnit === 'kg') unit = 'kg'
+    else if (rawUnit === 'ml') unit = 'ml'
+    else if (rawUnit === 'l' || rawUnit.startsWith('litro')) unit = 'L'
+    else if (rawUnit === 'oz') unit = 'oz'
+    else if (rawUnit.startsWith('unidad')) unit = 'unidad'
+    else unit = 'g'
+    return { amount, unit }
+  }
+
+  // Default
+  return { amount: 100, unit: 'g' }
+}
+
+/**
+ * Given a FoodItem with macros for the current portion, compute the base/100g values.
+ */
+export function normalizeToBase100(food: FoodItem): FoodItem {
+  const totalGrams = safe(food.portionAmount) * safe(food.unitWeightInGrams)
+  if (totalGrams <= 0) return food
+
+  const factor = 100 / totalGrams
+  return {
+    ...food,
+    baseCal100: Math.round(safe(food.calories) * factor * 10) / 10,
+    baseProt100: Math.round(safe(food.protein) * factor * 10) / 10,
+    baseCarbs100: Math.round(safe(food.carbs) * factor * 10) / 10,
+    baseFat100: Math.round(safe(food.fat) * factor * 10) / 10,
+  }
+}
+
+/**
+ * Given a FoodItem with base/100g values, compute display macros for the current portion.
+ */
+export function calcMacros(food: FoodItem): FoodItem {
+  const totalGrams = safe(food.portionAmount) * safe(food.unitWeightInGrams)
+  const factor = totalGrams / 100
+
+  return {
+    ...food,
+    calories: Math.round(safe(food.baseCal100) * factor),
+    protein: Math.round(safe(food.baseProt100) * factor * 10) / 10,
+    carbs: Math.round(safe(food.baseCarbs100) * factor * 10) / 10,
+    fat: Math.round(safe(food.baseFat100) * factor * 10) / 10,
+  }
+}
+
+/**
+ * Create a FoodItem with new-style fields from legacy portion string + macros.
+ */
+export function migrateLegacyFood(legacy: {
+  name: string
+  portion?: string
+  portionGrams?: number
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  category?: string
+  tags?: string[]
+}): FoodItem {
+  const parsed = parsePortionString(legacy.portion || '100g')
+  let unitWeight = UNIT_WEIGHT_GRAMS[parsed.unit]
+  let portionAmount = parsed.amount
+
+  // portionGrams from the AI is the TOTAL weight of the portion. For weight/volume
+  // units it can replace the parsed amount directly, but for 'unidad' it must become
+  // the per-unit weight — otherwise 55 (grams) ends up as 55 units ("55unidad").
+  if (legacy.portionGrams && legacy.portionGrams > 0) {
+    if (parsed.unit === 'unidad') {
+      if (parsed.amount > 0) unitWeight = legacy.portionGrams / parsed.amount
+    } else {
+      portionAmount = legacy.portionGrams
+    }
+  }
+
+  const food: FoodItem = {
+    name: legacy.name,
+    portionAmount,
+    portionUnit: parsed.unit,
+    unitWeightInGrams: unitWeight,
+    calories: safe(legacy.calories),
+    protein: safe(legacy.protein),
+    carbs: safe(legacy.carbs),
+    fat: safe(legacy.fat),
+    baseCal100: 0,
+    baseProt100: 0,
+    baseCarbs100: 0,
+    baseFat100: 0,
+    category: legacy.category as FoodItem['category'],
+    tags: legacy.tags,
+    portionNote: (legacy as any).portionNote,
+  }
+
+  return normalizeToBase100(food)
+}
+
+/**
+ * Parse a free-typed portion amount ("2,5", "300") into a finite number ≥ 0.
+ */
+export function parsePortionAmountInput(text: string): number {
+  const n = parseFloat(String(text).replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : 0
+}
+
+/**
+ * Unit weight to apply when the portion unit changes: standard units impose
+ * their own weight; `unidad` keeps the current per-unit weight (100 g fallback).
+ */
+export function resolveUnitWeight(unit: PortionUnit, currentWeight: number): number {
+  if (unit !== 'unidad') return UNIT_WEIGHT_GRAMS[unit]
+  const w = Number(currentWeight)
+  return Number.isFinite(w) && w > 0 ? w : UNIT_WEIGHT_GRAMS.unidad
+}
+
+/**
+ * Create a default empty FoodItem for manual entry.
+ */
+export function createEmptyFood(): FoodItem {
+  return {
+    name: '',
+    portionAmount: 100,
+    portionUnit: 'g',
+    unitWeightInGrams: 1,
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    baseCal100: 0,
+    baseProt100: 0,
+    baseCarbs100: 0,
+    baseFat100: 0,
+  }
+}

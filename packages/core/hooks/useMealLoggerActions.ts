@@ -1,0 +1,132 @@
+import { useCallback, useMemo } from 'react'
+import type { NutritionEntry, FoodItem, DailyTotals, NutritionGoal, QualityScore, QualityBreakdown, QualitySuggestion } from '../types'
+
+export type AnalyzeResult = {
+  foods: FoodItem[]
+  meal_description?: string
+  quality?: {
+    score: QualityScore
+    breakdown: QualityBreakdown
+    message: string
+    suggestion: QualitySuggestion | null
+  }
+}
+
+/** Web passes `File[]`; mobile reads photo URIs into `Blob`s (see saveEntry). */
+export type MealPhotoFile = File | Blob
+
+type AnalyzeMealFn = (
+  imageFiles: MealPhotoFile | MealPhotoFile[],
+  mealType: string,
+  description?: string,
+  userContext?: { goal?: string; remainingMacros?: DailyTotals; recentScores?: { mealType: string; score: string; loggedAt: string }[]; topFoods?: string[]; logHour?: number },
+) => Promise<{ foods: FoodItem[]; totals: DailyTotals; meal_description: string; ai_model: string; quality?: AnalyzeResult['quality'] }>
+
+type ScoreMealQualityFn = (
+  foods: { name: string; calories: number; protein: number; carbs: number; fat: number }[],
+  totals: DailyTotals,
+  mealType: string,
+  userContext?: { goal?: string; remainingMacros?: DailyTotals; recentScores?: { mealType: string; score: string; loggedAt: string }[]; topFoods?: string[]; logHour?: number },
+) => Promise<{ score: QualityScore; breakdown: QualityBreakdown; message: string; suggestion: QualitySuggestion | null } | null>
+
+interface UseMealLoggerActionsDeps {
+  userId: string | null
+  goals: NutritionGoal | null
+  entries: NutritionEntry[]
+  analyzeMeal: AnalyzeMealFn
+  scoreMealQuality: ScoreMealQualityFn
+  saveEntry: (entry: Omit<NutritionEntry, 'id'>, photoFiles?: MealPhotoFile[]) => Promise<NutritionEntry>
+  updateEntry: (id: string, updates: Partial<NutritionEntry>) => Promise<void>
+  getRemainingMacros: (date?: string) => DailyTotals
+  /**
+   * Fallos de la puntuación de calidad en segundo plano (la entry ya está
+   * guardada; esto es best-effort). Opcional: mobile lo enchufa a Sentry.
+   */
+  onBackgroundError?: (error: unknown, op: 'score_meal_quality' | 'update_quality_score') => void
+}
+
+/**
+ * Service hook for meal logging actions.
+ * Encapsulates analyze (with quality context) and save (with async quality scoring).
+ * Used by web (NutritionPage dialog, MealLoggerPage) and by mobile through the
+ * `useMobileMealLoggerActions` adapter (URI → Blob).
+ */
+export function useMealLoggerActions({
+  userId,
+  goals,
+  entries,
+  analyzeMeal,
+  scoreMealQuality,
+  saveEntry,
+  updateEntry,
+  getRemainingMacros,
+  onBackgroundError,
+}: UseMealLoggerActionsDeps) {
+  const remaining = useMemo(() => getRemainingMacros(), [getRemainingMacros])
+
+  // `eatenHour` is the hour the food was eaten (from the meal's finish time /
+  // photo EXIF), which the AI weighs for timing quality (e.g. late-night junk).
+  // Falls back to the current hour when the caller has no eaten time yet.
+  const buildUserContext = useCallback((eatenHour?: number) => {
+    const recentScores = entries
+      .filter(e => e.qualityScore)
+      .slice(0, 5)
+      .map(e => ({ mealType: e.mealType, score: e.qualityScore!, loggedAt: e.loggedAt }))
+    return {
+      goal: goals?.goal,
+      remainingMacros: remaining,
+      recentScores: recentScores.length > 0 ? recentScores : undefined,
+      logHour: eatenHour != null && Number.isFinite(eatenHour) ? eatenHour : new Date().getHours(),
+    }
+  }, [goals, remaining, entries])
+
+  const handleAnalyze = useCallback(async (
+    imageFiles: MealPhotoFile[],
+    mealType: string,
+    description?: string,
+    eatenHour?: number,
+  ): Promise<AnalyzeResult> => {
+    const result = await analyzeMeal(imageFiles, mealType, description, buildUserContext(eatenHour))
+    return {
+      foods: result.foods,
+      meal_description: result.meal_description,
+      quality: result.quality,
+    }
+  }, [analyzeMeal, buildUserContext])
+
+  const handleSave = useCallback(async (
+    entry: Omit<NutritionEntry, 'id' | 'user'>,
+    photoFiles?: MealPhotoFile[],
+  ) => {
+    const saved = await saveEntry({ ...entry, user: userId || undefined }, photoFiles)
+    // Fire async quality scoring for manual/barcode entries that don't have a score yet
+    if (!saved.qualityScore && saved.foods.length > 0) {
+      const portion = (f: FoodItem) => f.portionAmount || 1
+      scoreMealQuality(
+        saved.foods.map(f => ({
+          name: f.name || '?',
+          calories: (f.baseCal100 || 0) * portion(f),
+          protein: (f.baseProt100 || 0) * portion(f),
+          carbs: (f.baseCarbs100 || 0) * portion(f),
+          fat: (f.baseFat100 || 0) * portion(f),
+        })),
+        { calories: saved.totalCalories || 0, protein: saved.totalProtein || 0, carbs: saved.totalCarbs || 0, fat: saved.totalFat || 0 },
+        saved.mealType,
+        goals ? { goal: goals.goal, remainingMacros: remaining } : undefined,
+      ).then(async (quality) => {
+        if (quality && saved.id && !saved.id.startsWith('local_')) {
+          await updateEntry(saved.id, {
+            qualityScore: quality.score,
+            qualityBreakdown: quality.breakdown,
+            qualityMessage: quality.message,
+            qualitySuggestion: quality.suggestion,
+          }).catch((e) => { onBackgroundError?.(e, 'update_quality_score') })
+        }
+      }).catch((e) => { onBackgroundError?.(e, 'score_meal_quality') /* non-blocking — entry already saved, quality is best-effort */ })
+    }
+    // F4 (#173): la depleción de despensa necesita el id/foods de la entry recién guardada
+    return saved
+  }, [saveEntry, userId, scoreMealQuality, goals, remaining, updateEntry, onBackgroundError])
+
+  return { handleAnalyze, handleSave }
+}
