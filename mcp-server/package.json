@@ -30,7 +30,7 @@
     "ai": "^7.0.48",
     "dayjs": "1.11.21",
     "dotenv": "^17.4.2",
-    "expo-server-sdk": "^7.2.0",
+    "expo-server-sdk": "^8.0.0",
     "google-auth-library": "^11.0.2",
     "i18next": "^26.4.0",
     "langfuse": "^3.38.20",
