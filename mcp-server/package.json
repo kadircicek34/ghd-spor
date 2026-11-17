@@ -29,7 +29,7 @@
     "@opentelemetry/sdk-node": "^0.222.0",
     "ai": "^7.0.48",
     "dayjs": "1.11.21",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.10",
     "expo-server-sdk": "^7.2.0",
     "google-auth-library": "^11.0.2",
     "i18next": "^26.4.0",
