@@ -1,0 +1,198 @@
+import { z } from "zod";
+import type { Tier } from "./model-resolver.js";
+import { runStructuredGeneration } from "./structured-generation.js";
+import type { PushLanguage } from "./push-sender.js";
+
+// ── Output schema ────────────────────────────────────────────────────────────
+// Framed as OBSERVED PATTERNS, never medical advice/diagnosis. See the
+// "cross-metric-insight" prompt (Langfuse + FALLBACKS) for the safety framing.
+
+const CorrelationSchema = z.object({
+  observation: z
+    .string()
+    .describe("Patrón observado en lenguaje llano (ej: 'los días con <6h de sueño entrenaste menos'). Correlación, NO causa ni diagnóstico."),
+  metrics: z
+    .array(z.string())
+    .describe("Métricas involucradas, ej: ['sueño','entrenamiento']"),
+  strength: z
+    .enum(["weak", "moderate", "strong"])
+    .describe("Cuán marcado APARECE el patrón en los datos (no implica causalidad)"),
+  lag: z
+    .enum(["same_day", "next_day"])
+    .nullable()
+    .describe("'next_day' si el patrón es un efecto retardado (ej: sueño de anoche → entreno de hoy); 'same_day' o null si es del mismo día. (nullable, no optional: OpenAI strict exige todas las claves en 'required')"),
+});
+
+const CrossInsightSchema = z.object({
+  headline: z.string().describe("Titular corto y neutral del resumen del periodo"),
+  correlations: z
+    .array(CorrelationSchema)
+    .describe("Patrones cruzados entre métricas (correlación, no causa)"),
+  wins: z.array(z.string()).describe("Cosas que el usuario hizo bien en el periodo"),
+  watchouts: z
+    .array(z.string())
+    .describe("Señales a vigilar, enmarcadas como observaciones — NUNCA consejo médico ni diagnóstico"),
+  suggestion: z
+    .string()
+    .describe("UNA sola sugerencia accionable, suave y opcional"),
+  period: z.string().describe("Descripción del periodo analizado, ej: 'últimos 7 días'"),
+  suggestedAction: z
+    .object({
+      type: z.enum(["reminder_sleep", "reminder_water", "log_nutrition", "start_free_session", "none"]),
+      label: z.string().describe("Texto corto del botón en español, ej. 'Crear recordatorio de sueño'. NUNCA una instrucción ejecutable."),
+    })
+    .nullable()
+    .describe("Acción sugerida de catálogo CERRADO. El modelo elige type de la lista; 'none' (o null) si ninguna aplica con claridad. NUNCA acción médica. (nullable, no optional: OpenAI strict)"),
+  trend: z
+    .enum(["improving", "steady", "declining"])
+    .nullable()
+    .describe("Tendencia vs el periodo anterior, SOLO si el contexto trae '## Periodo anterior' con datos; null en el primer periodo. (nullable, no optional: OpenAI strict)"),
+});
+
+export type CrossInsight = z.infer<typeof CrossInsightSchema>;
+
+// ── Input ────────────────────────────────────────────────────────────────────
+// The compact rollup built by @calistenia/core (client) or
+// insight-context-server.ts (cron) — ONE declaration, in core (#480).
+
+import type { InsightContext } from "@calistenia/core/lib/insightContext";
+export type { InsightContext };
+
+interface CrossInsightInput {
+  context: InsightContext;
+  tier: Tier;
+  /**
+   * Idioma del texto libre de salida (headline, observaciones, wins,
+   * watchouts, sugerencia) — #804: el push semanal usa `result.headline` tal
+   * cual (es un string plano, no {es,en}), así que sin esto siempre salía en
+   * español aunque el push de alrededor sí estuviera en el idioma del usuario.
+   * Cambio barato: una línea añadida al turno de usuario, NO al prompt de
+   * sistema (gestionado en Langfuse, fuera de este repo). Por defecto "es",
+   * que es el comportamiento de siempre.
+   */
+  language?: PushLanguage;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const n1 = (v: number | null | undefined): string =>
+  v == null ? "?" : Math.round(v * 10) / 10 + "";
+const n0 = (v: number | null | undefined): string =>
+  v == null ? "?" : Math.round(v) + "";
+
+function buildUserText(ctx: InsightContext): string {
+  const { period, summary: s, rows, watchAvailable } = ctx;
+  const label = period.type === "weekly" ? "últimos 7 días" : "últimos 30 días";
+
+  const lines: string[] = [];
+  lines.push(
+    `Periodo: ${label} (${period.start} a ${period.end}). Días con algún registro: ${s.daysWithAnyData}/${s.days}.`,
+  );
+  if (ctx.primaryGoal) {
+    lines.push(`Objetivo declarado del usuario: ${ctx.primaryGoal.replace(/_/g, " ")}. Interpreta las señales en función de ese objetivo (p. ej. en recomposición el peso estable no es estancamiento).`);
+  }
+  lines.push("");
+  lines.push("## Resumen agregado");
+  lines.push(`- Fuerza: ${s.workouts.total} entrenos en ${s.workouts.daysTrained} días. Racha actual ${s.streaks.currentTrainingStreak}, máxima ${s.streaks.longestTrainingStreak}.`);
+  lines.push(`- Cardio: ${s.cardio.sessions} sesiones, ${n1(s.cardio.totalKm)} km, ${n0(s.cardio.totalMinutes)} min.`);
+  lines.push(`- Circuitos: ${s.circuits.sessions} sesiones.`);
+  lines.push(`- Nutrición: registrada ${s.nutrition.daysLogged} días · ~${n0(s.nutrition.avgCalories)} kcal/día · ~${n1(s.nutrition.avgMeals)} comidas/día.`);
+  lines.push(`- Agua: registrada ${s.water.daysLogged} días · ~${n0(s.water.avgMl)} ml/día.`);
+  lines.push(`- Sueño: registrado ${s.sleep.daysLogged} días · ~${n0(s.sleep.avgMinutes)} min/noche · calidad ~${n1(s.sleep.avgQuality)}/5.`);
+  lines.push(`- Peso: ${n1(s.weight.firstKg)} kg → ${n1(s.weight.lastKg)} kg (Δ ${s.weight.deltaKg == null ? "?" : n1(s.weight.deltaKg)} kg).`);
+  if (s.waist?.firstCm != null) {
+    lines.push(`- Cintura: ${n1(s.waist.firstCm)} cm → ${n1(s.waist.lastCm)} cm (Δ ${s.waist.deltaCm == null ? "?" : n1(s.waist.deltaCm)} cm). Peso estable + cintura bajando sugiere recomposición.`);
+  }
+  if (s.bodyFat?.firstPct != null) {
+    lines.push(`- Grasa corporal estimada (método Navy, cinta métrica): ${n1(s.bodyFat.firstPct)}% → ${n1(s.bodyFat.lastPct)}% (Δ ${s.bodyFat.deltaPct == null ? "?" : n1(s.bodyFat.deltaPct)} pts).`);
+  }
+  if (watchAvailable) {
+    lines.push(`- Reloj: ~${n0(s.watch.avgSteps)} pasos/día.`);
+  } else {
+    lines.push(`- Reloj: sin datos (no hay reloj conectado). NO inventes correlaciones de pasos/FC/HRV.`);
+  }
+
+  const covMin = period.days <= 7 ? 4 : 10;
+  const lowCoverage: Array<{ label: string; count: number }> = [
+    { label: "sueño", count: s.sleep.daysLogged },
+    { label: "agua", count: s.water.daysLogged },
+    { label: "nutrición", count: s.nutrition.daysLogged },
+    { label: "fuerza", count: s.workouts.daysTrained },
+    { label: "cardio", count: s.cardio.sessions },
+    { label: "circuitos", count: s.circuits.sessions },
+  ].filter((d) => d.count > 0 && d.count < covMin);
+
+  if (lowCoverage.length) {
+    lines.push("");
+    lines.push('## Cobertura insuficiente (NO afirmes patrones que dependan de estas métricas — di "pocos datos de X")');
+    for (const d of lowCoverage) {
+      lines.push(`- ${d.label}: ${d.count}/${period.days} días`);
+    }
+  }
+
+  if (ctx.previousSummary) {
+    const p = ctx.previousSummary;
+    lines.push("");
+    lines.push("## Periodo anterior (para comparar — NO inventes una tendencia fuerte con un solo periodo previo)");
+    lines.push(`- Fuerza: ${p.workouts.total} entrenos en ${p.workouts.daysTrained} días.`);
+    lines.push(`- Cardio: ${p.cardio.sessions} sesiones, ${n1(p.cardio.totalKm)} km, ${n0(p.cardio.totalMinutes)} min.`);
+    lines.push(`- Circuitos: ${p.circuits.sessions} sesiones.`);
+    lines.push(`- Nutrición: ${p.nutrition.daysLogged} días · ~${n0(p.nutrition.avgCalories)} kcal/día.`);
+    lines.push(`- Agua: ${p.water.daysLogged} días · ~${n0(p.water.avgMl)} ml/día.`);
+    lines.push(`- Sueño: ${p.sleep.daysLogged} días · ~${n0(p.sleep.avgMinutes)} min/noche · calidad ~${n1(p.sleep.avgQuality)}/5.`);
+    lines.push(`- Peso: ${n1(p.weight.firstKg)} → ${n1(p.weight.lastKg)} kg (Δ ${p.weight.deltaKg == null ? "?" : n1(p.weight.deltaKg)} kg).`);
+    if (p.waist?.firstCm != null) {
+      lines.push(`- Cintura: ${n1(p.waist.firstCm)} → ${n1(p.waist.lastCm)} cm (Δ ${p.waist.deltaCm == null ? "?" : n1(p.waist.deltaCm)} cm).`);
+    }
+    if (p.bodyFat?.firstPct != null) {
+      lines.push(`- Grasa corporal estimada: ${n1(p.bodyFat.firstPct)}% → ${n1(p.bodyFat.lastPct)}%.`);
+    }
+  }
+
+  lines.push("");
+  lines.push("## Detalle por día (solo días con datos)");
+  for (const r of rows) {
+    const parts: string[] = [];
+    if (r.workouts) parts.push(`fuerza ${r.workouts}${r.workoutMinutes ? `(${r.workoutMinutes}min)` : ""}`);
+    if (r.cardioSessions) parts.push(`cardio ${n1(r.cardioKm)}km/${n0(r.cardioMinutes)}min`);
+    if (r.circuitSessions) parts.push(`circuito ${r.circuitSessions}`);
+    if (r.calories != null || r.meals != null) parts.push(`nutrición ${n0(r.calories)}kcal/${n0(r.meals)}comidas`);
+    if (r.waterMl != null) parts.push(`agua ${n0(r.waterMl)}ml`);
+    if (r.sleepMinutes != null) parts.push(`sueño ${n0(r.sleepMinutes)}min${r.sleepQuality != null ? `(cal ${n1(r.sleepQuality)})` : ""}`);
+    if (r.weightKg != null) parts.push(`peso ${n1(r.weightKg)}kg`);
+    if (r.waistCm != null) parts.push(`cintura ${n1(r.waistCm)}cm`);
+    if (r.bodyFatPct != null) parts.push(`grasa ${n1(r.bodyFatPct)}%`);
+    if (r.steps != null) parts.push(`${n0(r.steps)}pasos`);
+    if (parts.length) lines.push(`- ${r.date}: ${parts.join(", ")}`);
+  }
+
+  return lines.join("\n");
+}
+
+// ── Generator ────────────────────────────────────────────────────────────────
+
+export async function generateCrossInsight({ context, tier, language }: CrossInsightInput) {
+  // El contexto (etiquetas, fechas) va siempre en español — es el idioma de
+  // salida el que cambia, así que basta con pedirlo antes del resto del turno.
+  const languageNote =
+    language === "en"
+      ? "INSTRUCCIÓN DE IDIOMA: escribe TODO el texto libre de tu respuesta (headline, " +
+        "observation de cada correlación, wins, watchouts, suggestion.label) en INGLÉS. " +
+        "Los datos de este contexto están en español; ignóralo para decidir el idioma de salida.\n\n"
+      : "";
+  const userText = languageNote + buildUserText(context);
+
+  const { object, modelName } = await runStructuredGeneration({
+    promptName: "cross-metric-insight",
+    telemetryId: "cross-insight-generator",
+    tier,
+    schema: CrossInsightSchema,
+    user: userText,
+    metadata: { periodType: context.period.type },
+  });
+
+  return {
+    ...object,
+    model_used: modelName,
+  };
+}

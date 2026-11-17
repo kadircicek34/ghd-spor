@@ -1,0 +1,97 @@
+{
+  "projectId": "c84e2378-9de4-4569-85ba-1efc907b6e97",
+  "shape": "package",
+  "pkg": "@calistenia/web",
+  "globalName": "Calistenia",
+  "srcDir": "src/components/ui",
+  "tsconfig": "tsconfig.json",
+  "buildCmd": "node .design-sync/build-types.mjs && node .design-sync/build-css.mjs && node .design-sync/gen-docs.mjs",
+  "cssEntry": ".ds-compiled.css",
+  "docsDir": "../../../../../.design-sync/docs",
+  "guidelinesGlob": [
+    "../../../../../.design-sync/guidelines/*.md"
+  ],
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "primaryStory": "RegistrarPeso",
+      "viewport": "600x440"
+    },
+    "Sheet": {
+      "cardMode": "single",
+      "primaryStory": "FiltrosMovil",
+      "viewport": "600x480"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "Alert": {
+      "cardMode": "column"
+    },
+    "Tabs": {
+      "cardMode": "column"
+    }
+  },
+  "dtsPropsFor": {
+    "Alert": "variant?: \"default\" | \"destructive\"; className?: string; children?: React.ReactNode;",
+    "AlertTitle": "className?: string; children?: React.ReactNode;",
+    "AlertDescription": "className?: string; children?: React.ReactNode;",
+    "ButtonGroup": "className?: string; children?: React.ReactNode;",
+    "ButtonGroupItem": "onClick?: React.MouseEventHandler<HTMLButtonElement>; disabled?: boolean; className?: string; children?: React.ReactNode;",
+    "ButtonGroupText": "className?: string; children?: React.ReactNode;",
+    "Card": "className?: string; children?: React.ReactNode;",
+    "CardHeader": "className?: string; children?: React.ReactNode;",
+    "CardTitle": "className?: string; children?: React.ReactNode;",
+    "CardDescription": "className?: string; children?: React.ReactNode;",
+    "CardAction": "className?: string; children?: React.ReactNode;",
+    "CardContent": "className?: string; children?: React.ReactNode;",
+    "CardFooter": "className?: string; children?: React.ReactNode;",
+    "Dialog": "open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; modal?: boolean; children?: React.ReactNode;",
+    "DialogTrigger": "asChild?: boolean; className?: string; children?: React.ReactNode;",
+    "DialogClose": "asChild?: boolean; className?: string; children?: React.ReactNode;",
+    "DialogHeader": "className?: string; children?: React.ReactNode;",
+    "DialogTitle": "className?: string; children?: React.ReactNode;",
+    "DialogDescription": "className?: string; children?: React.ReactNode;",
+    "DialogFooter": "className?: string; children?: React.ReactNode;",
+    "Input": "type?: string; placeholder?: string; value?: string | number; defaultValue?: string | number; onChange?: React.ChangeEventHandler<HTMLInputElement>; disabled?: boolean; readOnly?: boolean; inputMode?: \"text\" | \"numeric\" | \"decimal\" | \"tel\" | \"email\" | \"search\" | \"url\"; id?: string; name?: string; className?: string;",
+    "Textarea": "rows?: number; placeholder?: string; value?: string; defaultValue?: string; onChange?: React.ChangeEventHandler<HTMLTextAreaElement>; disabled?: boolean; id?: string; name?: string; className?: string;",
+    "Label": "htmlFor?: string; className?: string; children?: React.ReactNode;",
+    "Progress": "value?: number | null; max?: number; className?: string;",
+    "ScrollArea": "type?: \"auto\" | \"always\" | \"scroll\" | \"hover\"; scrollHideDelay?: number; className?: string; children?: React.ReactNode;",
+    "ScrollBar": "orientation?: \"horizontal\" | \"vertical\"; className?: string;",
+    "Separator": "orientation?: \"horizontal\" | \"vertical\"; decorative?: boolean; className?: string;",
+    "Sheet": "open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; modal?: boolean; children?: React.ReactNode;",
+    "SheetTrigger": "asChild?: boolean; className?: string; children?: React.ReactNode;",
+    "SheetClose": "asChild?: boolean; className?: string; children?: React.ReactNode;",
+    "SheetHeader": "className?: string; children?: React.ReactNode;",
+    "SheetTitle": "className?: string; children?: React.ReactNode;",
+    "SheetDescription": "className?: string; children?: React.ReactNode;",
+    "SheetFooter": "className?: string; children?: React.ReactNode;",
+    "Skeleton": "className?: string;",
+    "Spinner": "className?: string;",
+    "Tabs": "value?: string; defaultValue?: string; onValueChange?: (value: string) => void; orientation?: \"horizontal\" | \"vertical\"; className?: string; children?: React.ReactNode;",
+    "TabsList": "className?: string; children?: React.ReactNode;",
+    "TabsTrigger": "value: string; disabled?: boolean; className?: string; children?: React.ReactNode;",
+    "TabsContent": "value: string; className?: string; children?: React.ReactNode;",
+    "Tooltip": "open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; delayDuration?: number; children?: React.ReactNode;",
+    "TooltipProvider": "delayDuration?: number; skipDelayDuration?: number; children?: React.ReactNode;",
+    "TooltipTrigger": "asChild?: boolean; className?: string; children?: React.ReactNode;",
+    "TooltipContent": "side?: \"top\" | \"right\" | \"bottom\" | \"left\"; align?: \"start\" | \"center\" | \"end\"; sideOffset?: number; className?: string; children?: React.ReactNode;",
+    "SidebarContent": "className?: string; children?: React.ReactNode;",
+    "SidebarHeader": "className?: string; children?: React.ReactNode;",
+    "SidebarFooter": "className?: string; children?: React.ReactNode;",
+    "SidebarSeparator": "className?: string;",
+    "SidebarGroup": "className?: string; children?: React.ReactNode;",
+    "SidebarGroupContent": "className?: string; children?: React.ReactNode;",
+    "SidebarMenu": "className?: string; children?: React.ReactNode;",
+    "SidebarMenuItem": "className?: string; children?: React.ReactNode;",
+    "SidebarMenuBadge": "className?: string; children?: React.ReactNode;",
+    "SidebarMenuSub": "className?: string; children?: React.ReactNode;",
+    "SidebarMenuSubItem": "className?: string; children?: React.ReactNode;",
+    "SidebarInset": "className?: string; children?: React.ReactNode;",
+    "SidebarInput": "placeholder?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; className?: string;",
+    "SidebarTrigger": "onClick?: React.MouseEventHandler<HTMLButtonElement>; className?: string;",
+    "SidebarRail": "className?: string;"
+  }
+}

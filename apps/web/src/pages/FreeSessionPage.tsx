@@ -1,0 +1,708 @@
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { FREE_SESSION_QUEUE_KEY as STORAGE_KEY } from '@calistenia/core/lib/storage-keys'
+import { useCatalogExerciseList } from '@calistenia/core/hooks/useExerciseCatalog'
+import { useTranslation } from 'react-i18next'
+import { getExerciseEquipment, EQUIPMENT_CATALOG, getEquipmentLabelKey } from '@calistenia/core/lib/equipment'
+import { cn } from '../lib/utils'
+import { Button } from '../components/ui/button'
+import { Loader } from '../components/ui/loader'
+import { useActiveSession } from '../contexts/ActiveSessionContext'
+import type { Exercise, Workout, CircuitDefinition } from '@calistenia/core/types'
+import type { TranslatableField } from '@calistenia/core/lib/i18n-db'
+import { localize } from '@calistenia/core/lib/i18n-db'
+import { useLocalize } from '@calistenia/core/hooks/useLocalize'
+import WarmupCooldownPrompt from '../components/session/WarmupCooldownPrompt'
+import CircuitBuilder from '../components/circuit/CircuitBuilder'
+import { useCircuitSession } from '../contexts/CircuitSessionContext'
+import AISessionTab from '../components/free-session/AISessionTab'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface CatalogExercise {
+  id: string
+  name: TranslatableField
+  muscles: TranslatableField
+  category: string
+  sets: number | string
+  reps: string
+  rest: number
+  note: TranslatableField
+  youtube: string
+  priority: 'high' | 'med' | 'low'
+  isTimer?: boolean
+  timerSeconds?: number
+  demoImages?: string[]
+  demoVideo?: string
+}
+
+type CategoryId = 'todos' | 'push' | 'pull' | 'legs' | 'core' | 'lumbar' | 'full' | 'movilidad' | 'skill'
+
+const CATEGORIES: { id: CategoryId; label: string; accent: string }[] = [
+  { id: 'todos',     label: 'Todos',     accent: 'text-foreground' },
+  { id: 'push',      label: 'Push',      accent: 'text-lime' },
+  { id: 'pull',      label: 'Pull',      accent: 'text-sky-500' },
+  { id: 'legs',      label: 'Legs',      accent: 'text-pink-500' },
+  { id: 'core',      label: 'Core',      accent: 'text-amber-400' },
+  { id: 'lumbar',    label: 'Lumbar',     accent: 'text-red-500' },
+  { id: 'full',      label: 'Full',      accent: 'text-amber-400' },
+  { id: 'movilidad', label: 'Movilidad', accent: 'text-emerald-400' },
+  { id: 'skill',     label: 'Skill',     accent: 'text-violet-400' },
+]
+
+const CAT_BORDER: Record<string, string> = {
+  push: 'border-l-lime', pull: 'border-l-sky-500', legs: 'border-l-pink-500',
+  core: 'border-l-amber-400', lumbar: 'border-l-red-500', full: 'border-l-amber-400',
+  movilidad: 'border-l-emerald-400', skill: 'border-l-violet-400',
+}
+
+const CAT_TEXT: Record<string, string> = {
+  push: 'text-lime', pull: 'text-sky-500', legs: 'text-pink-500',
+  core: 'text-amber-400', lumbar: 'text-red-500', full: 'text-amber-400',
+  movilidad: 'text-emerald-400', skill: 'text-violet-400',
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function catalogToExercise(cat: CatalogExercise, locale = 'es'): Exercise {
+  return {
+    id: cat.id, name: localize(cat.name, locale), sets: cat.sets, reps: cat.reps,
+    rest: cat.rest, muscles: localize(cat.muscles, locale), note: localize(cat.note, locale),
+    youtube: cat.youtube, priority: cat.priority,
+    isTimer: cat.isTimer, timerSeconds: cat.timerSeconds,
+    demoImages: cat.demoImages, demoVideo: cat.demoVideo,
+  }
+}
+
+function estimateDuration(exercises: CatalogExercise[]): number {
+  let totalSecs = 0
+  for (const ex of exercises) {
+    const sets = typeof ex.sets === 'number' ? ex.sets : 3
+    const secPerSet = 45
+    totalSecs += sets * (secPerSet + ex.rest)
+  }
+  return Math.round(totalSecs / 60)
+}
+
+function loadSavedQueue(): CatalogExercise[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return (parsed as unknown[]).filter((e): e is CatalogExercise =>
+      !!e && typeof (e as CatalogExercise).id === 'string' && typeof (e as CatalogExercise).name === 'string')
+  } catch {
+    return []
+  }
+}
+
+function saveQueue(selected: CatalogExercise[]) {
+  try {
+    if (selected.length === 0) {
+      localStorage.removeItem(STORAGE_KEY)
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selected))
+    }
+  } catch { /* storage full or unavailable */ }
+}
+
+function useDebounce<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms)
+    return () => clearTimeout(id)
+  }, [value, ms])
+  return debounced
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function FreeSessionPage() {
+  const { t, i18n } = useTranslation()
+  const l = useLocalize()
+  const { isActive: sessionActive, startSession: contextStartSession } = useActiveSession()
+  const { startCircuit } = useCircuitSession()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'exercises' | 'circuit' | 'ia'>('exercises')
+  // El catálogo sale de core (#474): el bundle fusionado con `exercises_catalog`.
+  // `id` es la identidad canónica (slug), la que viaja a `sets_log`; la clave
+  // aleatoria de PB nunca. Sin PB sigue habiendo catálogo, así que ya no hay
+  // estado de «error de carga» que reintentar.
+  const { exercises: catalogList, loading } = useCatalogExerciseList()
+  const catalog = useMemo<CatalogExercise[]>(
+    () => catalogList
+      .map(ex => ({ ...ex, id: ex.slug }))
+      .sort((a, b) => localize(a.name, 'es').localeCompare(localize(b.name, 'es'))),
+    [catalogList],
+  )
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState<CategoryId>('todos')
+  const [activeEquipment, setActiveEquipment] = useState<string | null>(null)
+  const [selected, setSelected] = useState<CatalogExercise[]>(loadSavedQueue)
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [showWarmupPrompt, setShowWarmupPrompt] = useState(false)
+  const startingRef = useRef(false)
+
+  const debouncedSearch = useDebounce(search, 200)
+
+  // Persist queue to localStorage
+  useEffect(() => { saveQueue(selected) }, [selected])
+
+  // Close queue sheet when all exercises removed
+  useEffect(() => {
+    if (selected.length === 0) setQueueOpen(false)
+  }, [selected.length])
+
+  const filtered = useMemo(() => {
+    let result = catalog
+    if (activeCategory !== 'todos') result = result.filter(ex => ex.category === activeCategory)
+    if (activeEquipment) {
+      result = result.filter(ex => {
+        const equipmentIds = getExerciseEquipment({ name: l(ex.name), note: l(ex.note) })
+        return equipmentIds.includes(activeEquipment)
+      })
+    }
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase()
+      result = result.filter(ex => l(ex.name).toLowerCase().includes(q) || l(ex.muscles).toLowerCase().includes(q))
+    }
+    return result
+    // `l` en las deps: el filtro por equipo y la búsqueda leen nombres
+    // localizados; al cambiar de idioma hay que recalcularlos. (#484)
+  }, [catalog, activeCategory, activeEquipment, debouncedSearch, l])
+
+  const selectedIds = useMemo(() => new Set(selected.map(e => e.id)), [selected])
+  const selectedOrder = useMemo(() => {
+    const m = new Map<string, number>()
+    selected.forEach((e, i) => m.set(e.id, i + 1))
+    return m
+  }, [selected])
+
+  const toggleExercise = useCallback((ex: CatalogExercise) => {
+    setSelected(prev => {
+      const exists = prev.some(e => e.id === ex.id)
+      return exists ? prev.filter(e => e.id !== ex.id) : [...prev, ex]
+    })
+  }, [])
+
+  const moveUp = useCallback((idx: number) => {
+    if (idx === 0) return
+    setSelected(prev => { const n = [...prev]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; return n })
+  }, [])
+
+  const moveDown = useCallback((idx: number) => {
+    setSelected(prev => {
+      if (idx >= prev.length - 1) return prev
+      const n = [...prev]; [n[idx], n[idx + 1]] = [n[idx + 1], n[idx]]; return n
+    })
+  }, [])
+
+  const removeExercise = useCallback((idx: number) => {
+    setSelected(prev => prev.filter((_, i) => i !== idx))
+  }, [])
+
+  const startSession = useCallback(() => {
+    if (selected.length === 0 || startingRef.current) return
+    setShowWarmupPrompt(true)
+  }, [selected.length])
+
+  const launchSession = useCallback((mainExercises: Exercise[], warmupExercises: Exercise[] = [], cooldownExercises: Exercise[] = []) => {
+    if (startingRef.current) return
+    startingRef.current = true
+    const combined = [...warmupExercises, ...mainExercises, ...cooldownExercises]
+    const workout: Workout = {
+      phase: 0, day: 'lun', title: t('freeSession.freeSessionTitle'),
+      exercises: combined,
+    }
+    contextStartSession(workout, `free_${Date.now()}`, 'free')
+    setShowWarmupPrompt(false)
+    navigate('/session')
+    setTimeout(() => { startingRef.current = false }, 100)
+  }, [contextStartSession, navigate, t])
+
+  const handleCircuitStart = useCallback((circuit: CircuitDefinition) => {
+    startCircuit(circuit, 'custom')
+    navigate('/circuit/active')
+  }, [startCircuit, navigate])
+
+  // ── Active session — show resume banner ────────────────────────────────
+
+  const totalSets = selected.reduce((sum, ex) => sum + (typeof ex.sets === 'number' ? ex.sets : 3), 0)
+  const estMin = estimateDuration(selected)
+
+  // ── Builder UI ─────────────────────────────────────────────────────────────
+  return (
+    <div className="max-w-[900px] mx-auto px-4 py-6 md:px-6 md:py-8">
+
+      {/* ── Resume banner when session is minimized ────────────────────────── */}
+      {sessionActive && (
+        <button
+          onClick={() => navigate('/session')}
+          className="w-full mb-4 flex items-center gap-3 rounded-xl border border-lime/30 bg-lime/10 px-4 py-3 transition-all active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-lime/40"
+        >
+          <div className="relative flex-shrink-0">
+            <div className="size-9 rounded-lg bg-lime/20 flex items-center justify-center">
+              <svg className="size-4 text-lime" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+            </div>
+            <span className="absolute -top-0.5 -right-0.5 flex size-2.5">
+              <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-lime opacity-75" />
+              <span className="relative inline-flex rounded-full size-2.5 bg-lime" />
+            </span>
+          </div>
+          <div className="flex-1 text-left">
+            <div className="text-sm font-medium text-lime">{t('freeSession.sessionInProgress')}</div>
+            <div className="text-[10px] text-muted-foreground">{t('freeSession.tapToResume')}</div>
+          </div>
+          <svg className="size-4 text-lime flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      )}
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div className="mb-7">
+        <div className="text-[10px] text-muted-foreground tracking-[3px] mb-1 uppercase">{t('freeSession.freeMode')}</div>
+        <h1 className="font-bebas text-[28px] md:text-[32px] tracking-wide leading-none">
+          {t('freeSession.buildSession')}
+        </h1>
+      </div>
+
+      {/* ── Tab toggle ────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 rounded-lg bg-card p-1 mb-4">
+        <button
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === 'exercises' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => setActiveTab('exercises')}
+        >
+          {t('nav.exercises')}
+        </button>
+        <button
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === 'circuit' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => setActiveTab('circuit')}
+        >
+          {t('nav.circuit')}
+        </button>
+        <button
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            activeTab === 'ia' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => setActiveTab('ia')}
+        >
+          IA
+        </button>
+      </div>
+
+      {activeTab === 'exercises' ? (
+      <>
+      {/* ── Two-column layout on desktop ────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row lg:gap-6">
+
+        {/* ── Left: Exercise catalog ──────────────────────────────────────── */}
+        <div className="flex-1 min-w-0">
+
+          {/* Search */}
+          <div className="relative mb-4">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="7" cy="7" r="5" /><line x1="11" y1="11" x2="15" y2="15" />
+            </svg>
+            <input
+              type="text"
+              placeholder={t('freeSession.searchPlaceholder')}
+              aria-label={t('freeSession.searchExercises')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className={cn(
+                'w-full pl-9 py-2.5 rounded-lg border border-border bg-card text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:border-lime/50 focus-visible:ring-2 focus-visible:ring-lime/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background transition-colors',
+                search ? 'pr-14' : 'pr-3',
+              )}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                aria-label={t('freeSession.clearSearch')}
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs px-2.5 py-2 min-h-[44px] flex items-center"
+              >
+                {t('freeSession.clearSearch')}
+              </button>
+            )}
+          </div>
+
+          {/* Category filter */}
+          <div className="relative mb-5 md:mb-4"
+            style={{ maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent 100%)' }}
+          >
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none md:flex-wrap md:overflow-visible md:pb-0 md:[mask-image:none]" role="group" aria-label={t('freeSession.filterByCategory')}>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  aria-pressed={activeCategory === cat.id}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-md text-[11px] tracking-wide font-medium transition-all duration-200 border focus-visible:ring-2 focus-visible:ring-lime/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background',
+                    activeCategory === cat.id
+                      ? cn(cat.accent, 'border-current bg-accent/50')
+                      : 'text-muted-foreground border-transparent hover:text-foreground',
+                  )}
+                >
+                  {t(`freeSession.category.${cat.id}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Equipment filter */}
+          <div className="flex gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none">
+            {EQUIPMENT_CATALOG.filter(e => e.id !== 'ninguno').map(eq => {
+              const isActive = activeEquipment === eq.id
+              return (
+                <button
+                  key={eq.id}
+                  onClick={() => setActiveEquipment(isActive ? null : eq.id)}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 rounded-md text-[11px] tracking-wide font-medium transition-all duration-200 border',
+                    isActive
+                      ? 'text-amber-400 border-amber-400/30 bg-amber-500/10'
+                      : 'text-muted-foreground border-transparent hover:text-foreground',
+                  )}
+                >
+                  {eq.icon} {t(`equipment.${eq.id}`)}
+                </button>
+              )
+            })}
+            {activeEquipment && (
+              <button
+                onClick={() => setActiveEquipment(null)}
+                className="shrink-0 px-2 py-1.5 rounded-md text-[10px] text-muted-foreground/60 hover:text-muted-foreground"
+              >
+                {t('freeSession.clear')}
+              </button>
+            )}
+          </div>
+
+          {/* Exercise list */}
+          {loading ? (
+            <Loader label={t('freeSession.loadingCatalog')} className="py-16" />
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center">
+              <div className="text-muted-foreground text-sm">
+                {search ? t('freeSession.noResultsFor', { search }) : t('freeSession.noExercisesInCategory')}
+              </div>
+              {search && (
+                <button onClick={() => setSearch('')} className="mt-2 text-xs text-lime hover:text-lime/80">
+                  {t('freeSession.clearSearch')}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1" role="list" aria-label={t('freeSession.exerciseCatalog')}>
+              {filtered.map(ex => {
+                const isSelected = selectedIds.has(ex.id)
+                const orderNum = selectedOrder.get(ex.id) ?? 0
+                return (
+                  <button
+                    key={ex.id}
+                    role="listitem"
+                    onClick={() => toggleExercise(ex)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'w-full text-left flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2.5 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-lime/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background',
+                      isSelected
+                        ? 'bg-lime/5 border-l-lime'
+                        : cn('bg-card hover:bg-accent/30', CAT_BORDER[ex.category] || 'border-l-transparent'),
+                    )}
+                  >
+                    {/* Selection state */}
+                    <div className={cn(
+                      'size-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-mono font-bold transition-all duration-200',
+                      isSelected
+                        ? 'bg-lime text-lime-foreground'
+                        : 'bg-muted/50 text-muted-foreground',
+                    )}>
+                      {isSelected ? orderNum : '+'}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate leading-tight">{l(ex.name)}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground truncate">{l(ex.muscles) || t('freeSession.general')}</span>
+                        <span className="text-[10px] text-muted-foreground/40">·</span>
+                        <span className="text-[10px] font-mono text-muted-foreground shrink-0">{ex.sets}×{ex.reps}</span>
+                      </div>
+                    </div>
+
+                    <span className={cn('text-[9px] font-mono tracking-wider uppercase shrink-0', CAT_TEXT[ex.category] || 'text-muted-foreground')}>
+                      {ex.category}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: Session queue (desktop sidebar) ─────────────────────── */}
+        <div className="hidden lg:block w-[280px] shrink-0">
+          <div className="sticky top-16">
+            <SessionQueue
+              selected={selected}
+              totalSets={totalSets}
+              estMin={estMin}
+              onMoveUp={moveUp}
+              onMoveDown={moveDown}
+              onRemove={removeExercise}
+              onStart={startSession}
+              onClear={() => setSelected([])}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile: floating bar + bottom sheet ─────────────────────────────── */}
+      <div className="lg:hidden">
+        {/* Floating bottom bar */}
+        <div className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur-lg">
+          <div className="flex items-center gap-3 px-4 py-2.5">
+            <button
+              onClick={() => selected.length > 0 && setQueueOpen(!queueOpen)}
+              aria-label={selected.length > 0 ? t('freeSession.viewSelectedExercises', { count: selected.length }) : t('freeSession.noExerciseSelected')}
+              aria-expanded={queueOpen}
+              className="flex-1 flex items-center gap-2.5 min-w-0"
+            >
+              <div className={cn(
+                'size-8 rounded-lg flex items-center justify-center font-bebas text-lg transition-colors',
+                selected.length > 0 ? 'bg-lime/15 text-lime' : 'bg-muted text-muted-foreground',
+              )}>
+                {selected.length}
+              </div>
+              <div className="text-left min-w-0">
+                <div className="text-xs font-medium truncate">
+                  {selected.length === 0
+                    ? t('freeSession.noExercise')
+                    : t('freeSession.exerciseCount', { count: selected.length })}
+                </div>
+                {selected.length > 0 && (
+                  <div className="text-[10px] text-muted-foreground">
+                    {t('freeSession.queueSummary', { sets: totalSets, min: estMin })}
+                  </div>
+                )}
+              </div>
+              {selected.length > 0 && (
+                <svg className={cn('size-4 text-muted-foreground transition-transform ml-auto', queueOpen && 'rotate-180')} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="4,6 8,10 12,6" />
+                </svg>
+              )}
+            </button>
+            <Button
+              onClick={startSession}
+              disabled={selected.length === 0}
+              size="sm"
+              variant={selected.length > 0 ? 'limeSolid' : 'default'}
+              className={cn(
+                'font-bebas text-base tracking-wide px-5 transition-all',
+                selected.length === 0 && 'bg-muted text-muted-foreground',
+              )}
+            >
+              {t('freeSession.start')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Bottom sheet overlay */}
+        {queueOpen && selected.length > 0 && (
+          // a11y: fondo del bottom sheet, cierra al tocar fuera; el sheet tiene
+          // su propio botón de cerrar. (Sin regla jsx-a11y activa: #484)
+          <div
+            onKeyDown={(e) => { if (e.key === 'Escape') setQueueOpen(false) }}
+          >
+            <div className="fixed inset-0 z-30 bg-black/50" onClick={() => setQueueOpen(false)} aria-hidden="true" />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('freeSession.yourExerciseSession')}
+              className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+3.25rem)] left-0 right-0 z-30 max-h-[60vh] overflow-y-auto rounded-t-xl border-t border-border bg-background px-4 py-4 motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[10px] text-muted-foreground tracking-[3px] uppercase">{t('freeSession.yourSession')}</div>
+                <button
+                  onClick={() => { setSelected([]); setQueueOpen(false) }}
+                  aria-label={t('freeSession.emptyAllExercises')}
+                  className="text-[11px] text-red-400 hover:text-red-300"
+                >
+                  {t('freeSession.empty')}
+                </button>
+              </div>
+              <QueueList
+                selected={selected}
+                onMoveUp={moveUp}
+                onMoveDown={moveDown}
+                onRemove={removeExercise}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      </>
+      ) : activeTab === 'circuit' ? (
+        <CircuitBuilder onStart={handleCircuitStart} />
+      ) : (
+        <AISessionTab />
+      )}
+
+      {/* Warmup/Cooldown prompt */}
+      {showWarmupPrompt && (
+        <WarmupCooldownPrompt
+          exercises={selected.map(ex => catalogToExercise(ex, i18n.language))}
+          onConfirm={({ warmupExercises, cooldownExercises }) => {
+            launchSession(
+              selected.map(ex => catalogToExercise(ex, i18n.language)),
+              warmupExercises,
+              cooldownExercises,
+            )
+          }}
+          onSkip={() => {
+            launchSession(selected.map(ex => catalogToExercise(ex, i18n.language)))
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Session Queue (desktop sidebar) ───────────────────────────────────────────
+
+function SessionQueue({
+  selected, totalSets, estMin,
+  onMoveUp, onMoveDown, onRemove, onStart, onClear,
+}: {
+  selected: CatalogExercise[]
+  totalSets: number
+  estMin: number
+  onMoveUp: (i: number) => void
+  onMoveDown: (i: number) => void
+  onRemove: (i: number) => void
+  onStart: () => void
+  onClear: () => void
+}) {
+  const { t } = useTranslation()
+  if (selected.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border p-6 text-center">
+        <div className="font-bebas text-lg tracking-wide text-muted-foreground/60 mb-2">{t('freeSession.yourSession')}</div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {t('freeSession.emptyQueueHint')}
+        </p>
+        <div className="mt-4 flex justify-center gap-1.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="size-2 rounded-full bg-border" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-[10px] text-muted-foreground tracking-[3px] uppercase">{t('freeSession.yourSession')}</div>
+          <button
+            onClick={onClear}
+            aria-label={t('freeSession.emptyAllExercises')}
+            className="text-[10px] text-red-400/70 hover:text-red-400 transition-colors"
+          >
+            {t('freeSession.empty')}
+          </button>
+        </div>
+        <div className="flex items-baseline gap-3">
+          <span className="font-bebas text-2xl leading-none text-lime">{selected.length}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {t('freeSession.queueSummaryFull', { count: selected.length, sets: totalSets, min: estMin })}
+          </span>
+        </div>
+      </div>
+
+      {/* Exercise list */}
+      <div className="px-2 py-2 max-h-[calc(100vh-320px)] overflow-y-auto">
+        <QueueList
+          selected={selected}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
+          onRemove={onRemove}
+        />
+      </div>
+
+      {/* Start button */}
+      <div className="p-3 border-t border-border">
+        <Button
+          onClick={onStart}
+          variant="limeSolid"
+          className="w-full font-bebas text-lg tracking-wide"
+        >
+          {t('freeSession.startSession')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Queue List (shared between mobile sheet and desktop sidebar) ──────────────
+
+const QueueList = memo(function QueueList({
+  selected, onMoveUp, onMoveDown, onRemove,
+}: {
+  selected: CatalogExercise[]
+  onMoveUp: (i: number) => void
+  onMoveDown: (i: number) => void
+  onRemove: (i: number) => void
+}) {
+  const { t } = useTranslation()
+  const l = useLocalize()
+  return (
+    <div className="space-y-0.5" role="list" aria-label={t('freeSession.exercisesInSession')}>
+      {selected.map((ex, idx) => (
+        <div
+          key={ex.id}
+          role="listitem"
+          className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-accent/30 transition-colors group"
+        >
+          <span className="font-mono text-[10px] text-muted-foreground w-4 text-right shrink-0">{idx + 1}</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-medium truncate leading-tight">{l(ex.name)}</div>
+            <div className="text-[10px] text-muted-foreground font-mono">{ex.sets}×{ex.reps}</div>
+          </div>
+          <div className="flex items-center gap-0.5 opacity-50 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); onMoveUp(idx) }}
+              disabled={idx === 0}
+              aria-label={t('freeSession.moveUp', { name: l(ex.name) })}
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-accent disabled:opacity-20 transition-colors focus-visible:ring-2 focus-visible:ring-lime/40"
+            >
+              <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="4,10 8,6 12,10" /></svg>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onMoveDown(idx) }}
+              disabled={idx === selected.length - 1}
+              aria-label={t('freeSession.moveDown', { name: l(ex.name) })}
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-accent disabled:opacity-20 transition-colors focus-visible:ring-2 focus-visible:ring-lime/40"
+            >
+              <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="4,6 8,10 12,6" /></svg>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(idx) }}
+              aria-label={t('freeSession.removeExercise', { name: l(ex.name) })}
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors ml-0.5 focus-visible:ring-2 focus-visible:ring-red-500/40"
+            >
+              <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="4" x2="12" y2="12" /><line x1="12" y1="4" x2="4" y2="12" /></svg>
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+})

@@ -1,0 +1,11 @@
+**/node_modules
+pb_data
+pb_data_local
+**/dist
+.git
+.claude
+.env*
+*.md
+
+.deploy-secrets
+AGENTS.md

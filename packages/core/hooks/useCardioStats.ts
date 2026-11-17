@@ -1,0 +1,273 @@
+import { useMemo, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { pb } from '../lib/pocketbase'
+import { qk } from '../lib/query-keys'
+import dayjs from 'dayjs'
+import isoWeek from 'dayjs/plugin/isoWeek'
+import utcPlugin from 'dayjs/plugin/utc'
+import { getTimezone } from '../lib/dateUtils'
+import { wallClock, zonedMidnightMs } from '../lib/tzDate'
+import { safeLocale } from '../lib/i18n-safe'
+
+dayjs.extend(utcPlugin)
+dayjs.extend(isoWeek)
+import type { CardioSession, KmSplit } from '../types'
+
+export interface CardioAggregateStats {
+  totalDistance: number
+  totalSessions: number
+  totalDuration: number
+  totalCalories: number
+  totalElevation: number
+  /** Ritmo medio del periodo (min/km), ponderado por distancia. 0 si no hay distancia. */
+  avgPace: number
+  /** Velocidad media del periodo (km/h). 0 si no hay duración. */
+  avgSpeed: number
+}
+
+export interface PersonalRecords {
+  best1km?: number // pace min/km
+  best5km?: number
+  best10km?: number
+  longestDistance?: number
+  highestElevation?: number
+  bestPace?: number
+}
+
+export interface WeeklyTrendPoint {
+  weekLabel: string    // e.g. "Mar 3"
+  distance: number     // km
+  sessions: number
+}
+
+const emptyStats: CardioAggregateStats = { totalDistance: 0, totalSessions: 0, totalDuration: 0, totalCalories: 0, totalElevation: 0, avgPace: 0, avgSpeed: 0 }
+
+/** Suma distancia, sesiones, duración, calorías y elevación + ritmo/velocidad medios. */
+function aggregate(sessions: CardioSession[]): CardioAggregateStats {
+  const totalDistance = Math.round(sessions.reduce((a, s) => a + s.distance_km, 0) * 100) / 100
+  const totalDuration = sessions.reduce((a, s) => a + s.duration_seconds, 0)
+  const totalElevation = Math.round(sessions.reduce((a, s) => a + (s.elevation_gain || 0), 0))
+  // Ritmo/velocidad medios derivados del total (ponderados por distancia, no media de medias).
+  const avgPace = totalDistance > 0 ? (totalDuration / 60) / totalDistance : 0
+  const avgSpeed = totalDuration > 0 ? Math.round((totalDistance / (totalDuration / 3600)) * 10) / 10 : 0
+  return {
+    totalDistance,
+    totalSessions: sessions.length,
+    totalDuration,
+    totalCalories: sessions.reduce((a, s) => a + (s.calories_burned || 0), 0),
+    totalElevation,
+    avgPace,
+    avgSpeed,
+  }
+}
+
+/**
+ * queryFn: obtiene todas las sesiones cardio del usuario desde PocketBase.
+ * Devuelve el array crudo para que los derivados se calculen en useMemo.
+ */
+export async function fetchCardioSessions(userId: string): Promise<CardioSession[]> {
+  try {
+    // getFullList elimina el límite implícito de 500: obtiene todas las sesiones del usuario
+    const res = await pb.collection('cardio_sessions').getFullList({
+      filter: pb.filter('user = {:userId}', { userId }),
+      sort: '-started_at',
+      // Clave explícita: la auto-cancelación por defecto (método+ruta) chocaba con
+      // el getList del historial y el del widget sobre esta misma colección (#559).
+      requestKey: null,
+      fields: 'id,activity_type,distance_km,duration_seconds,avg_pace,elevation_gain,started_at,finished_at,note,calories_burned,max_pace,avg_speed_kmh,max_speed_kmh,splits',
+    })
+    return res.map((r: any) => ({
+      id: r.id,
+      user: userId,
+      activity_type: r.activity_type,
+      gps_points: [],
+      distance_km: r.distance_km,
+      duration_seconds: r.duration_seconds,
+      avg_pace: r.avg_pace,
+      elevation_gain: r.elevation_gain,
+      started_at: r.started_at,
+      finished_at: r.finished_at,
+      note: r.note,
+      calories_burned: r.calories_burned,
+      max_pace: r.max_pace,
+      avg_speed_kmh: r.avg_speed_kmh,
+      max_speed_kmh: r.max_speed_kmh,
+      splits: r.splits,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Lista cruda de sesiones cardio del usuario (más recientes primero).
+ * Comparte la query key con useCardioStats — un único fetch alimenta stats,
+ * historial y actividad reciente, y una sola invalidación lo refresca todo.
+ */
+export function useCardioSessions(userId: string | null) {
+  const query = useQuery({
+    queryKey: qk.cardioSessions(userId),
+    staleTime: 30_000,
+    // Home: se relee al volver a primer plano si ya caducó el staleTime. El
+    // guardado/borrado de cardio no parchea esta caché: invalida tras el
+    // servidor (`invalidateAfterWorkout`), así que no hay optimista que pisar.
+    refetchOnWindowFocus: true,
+    enabled: !!userId,
+    queryFn: () => fetchCardioSessions(userId!),
+  })
+  return {
+    sessions: query.data ?? [],
+    isLoading: query.isLoading,
+    refetch: query.refetch,
+  }
+}
+
+export function useCardioStats(userId: string | null) {
+  // tz y locale solo afectan a las derivaciones (memos), no al fetch — por eso
+  // NO entran en la query key: comparte caché con useCardioSessions.
+  const userTz = getTimezone()
+  // `safeLocale` y no `i18n.language` a secas: el detector del navegador puede
+  // dar `en-US@posix` y `toLocaleDateString` lanza RangeError (GYM-GUILLE-21).
+  const locale = safeLocale()
+
+  const query = useQuery({
+    queryKey: qk.cardioSessions(userId),
+    staleTime: 30_000,
+    // Home: se relee al volver a primer plano si ya caducó el staleTime. El
+    // guardado/borrado de cardio no parchea esta caché: invalida tras el
+    // servidor (`invalidateAfterWorkout`), así que no hay optimista que pisar.
+    refetchOnWindowFocus: true,
+    enabled: !!userId,
+    queryFn: () => fetchCardioSessions(userId!),
+  })
+
+  const allSessions = query.data ?? []
+
+  // — weeklyStats —
+  const weeklyStats = useMemo((): CardioAggregateStats => {
+    if (allSessions.length === 0) return emptyStats
+    const nowLocal = wallClock(userTz)
+    const weekStartMs = zonedMidnightMs(nowLocal.isoWeekday(1).format('YYYY-MM-DD'), userTz)
+    const weeklySessions = allSessions.filter(s => new Date(s.started_at).getTime() >= weekStartMs)
+    return aggregate(weeklySessions)
+  }, [allSessions, userTz])
+
+  // — monthlyStats —
+  const monthlyStats = useMemo((): CardioAggregateStats => {
+    if (allSessions.length === 0) return emptyStats
+    const nowLocal = wallClock(userTz)
+    const monthStartMs = zonedMidnightMs(nowLocal.format('YYYY-MM-01'), userTz)
+    const monthlySessions = allSessions.filter(s => new Date(s.started_at).getTime() >= monthStartMs)
+    return aggregate(monthlySessions)
+  }, [allSessions, userTz])
+
+  // — records (PRs personales) —
+  const records = useMemo((): PersonalRecords => {
+    const pr: PersonalRecords = {}
+    let bestPace = Infinity
+    let longestDist = 0
+    let highestElev = 0
+
+    for (const session of allSessions) {
+      if (session.distance_km > longestDist) longestDist = session.distance_km
+      if (session.elevation_gain > highestElev) highestElev = session.elevation_gain
+      if (session.max_pace && session.max_pace > 0 && session.max_pace < bestPace) {
+        bestPace = session.max_pace
+      }
+
+      if (session.splits && Array.isArray(session.splits)) {
+        for (const split of session.splits as KmSplit[]) {
+          if (split.km === 1 || (split.km >= 0.9 && split.km <= 1.1)) {
+            if (!pr.best1km || split.pace < pr.best1km) pr.best1km = split.pace
+          }
+        }
+
+        if (session.splits.length >= 5) {
+          const first5 = (session.splits as KmSplit[]).slice(0, 5)
+          const avg5pace = first5.reduce((a, s) => a + s.pace, 0) / 5
+          if (!pr.best5km || avg5pace < pr.best5km) pr.best5km = Math.round(avg5pace * 100) / 100
+        }
+
+        if (session.splits.length >= 10) {
+          const first10 = (session.splits as KmSplit[]).slice(0, 10)
+          const avg10pace = first10.reduce((a, s) => a + s.pace, 0) / 10
+          if (!pr.best10km || avg10pace < pr.best10km) pr.best10km = Math.round(avg10pace * 100) / 100
+        }
+      }
+    }
+
+    if (longestDist > 0) pr.longestDistance = Math.round(longestDist * 100) / 100
+    if (highestElev > 0) pr.highestElevation = Math.round(highestElev)
+    if (bestPace < Infinity) pr.bestPace = bestPace
+
+    return pr
+  }, [allSessions])
+
+  // — lastSession: primera sesión del array (ya viene ordenado por -started_at) —
+  const lastSession = useMemo((): CardioSession | null => {
+    if (allSessions.length === 0) return null
+    const nowLocal = wallClock(userTz)
+    const weekStartMs = zonedMidnightMs(nowLocal.isoWeekday(1).format('YYYY-MM-DD'), userTz)
+    const monthStartMs = zonedMidnightMs(nowLocal.format('YYYY-MM-01'), userTz)
+
+    const weeklyFirst = allSessions.find(s => new Date(s.started_at).getTime() >= weekStartMs)
+    if (weeklyFirst) return weeklyFirst
+
+    const monthlyFirst = allSessions.find(s => new Date(s.started_at).getTime() >= monthStartMs)
+    if (monthlyFirst) return monthlyFirst
+
+    return allSessions[0]
+  }, [allSessions, userTz])
+
+  // — weeklyTrend: distancia acumulada por semana, últimas 8 semanas —
+  const weeklyTrend = useMemo((): WeeklyTrendPoint[] => {
+    const WEEKS = 8
+    const nowLocal = wallClock(userTz)
+    const trend: WeeklyTrendPoint[] = []
+
+    for (let w = WEEKS - 1; w >= 0; w--) {
+      const wStartDay = nowLocal.isoWeekday(1).subtract(w, 'week')
+      const wStartMs = zonedMidnightMs(wStartDay.format('YYYY-MM-DD'), userTz)
+      const wEndMs = zonedMidnightMs(wStartDay.add(7, 'day').format('YYYY-MM-DD'), userTz)
+
+      let dist = 0
+      let count = 0
+      for (const s of allSessions) {
+        const t = new Date(s.started_at).getTime()
+        if (t >= wStartMs && t < wEndMs) {
+          dist += s.distance_km
+          count++
+        }
+      }
+      trend.push({
+        weekLabel: wStartDay.startOf('day').toDate().toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+        distance: Math.round(dist * 10) / 10,
+        sessions: count,
+      })
+    }
+    return trend
+  }, [allSessions, userTz, locale])
+
+  // — loadStats: compatibilidad con llamadores que invocan loadStats() manualmente —
+  // MEMOIZADO: si se recreara en cada render, un useEffect que lo tenga en deps
+  // (p.ej. cardio.tsx) entraría en bucle infinito ("Maximum update depth exceeded").
+  // query.refetch es estable en TanStack Query, así que la ref se mantiene fija.
+  const refetch = query.refetch
+  const loadStats = useCallback(async (_force = false) => {
+    // _force se ignora: TanStack Query gestiona el TTL vía staleTime.
+    // Una invalidación explícita del caller es la alternativa idiomática;
+    // aquí se expone refetch() para no romper la interfaz pública.
+    if (!userId) return
+    await refetch()
+  }, [userId, refetch])
+
+  return {
+    weeklyStats,
+    monthlyStats,
+    records,
+    lastSession,
+    weeklyTrend,
+    loading: query.isLoading,
+    loadStats,
+  }
+}

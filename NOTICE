@@ -1,0 +1,16 @@
+# NOTICE
+
+GHD Spor — Global Hukukçular Derneği Spor Platformu
+
+Copyright (c) 2026 Global Hukukçular Derneği
+
+Bu proje, MIT lisanslı [Calistenia App](https://github.com/guillermoscript/calistenia-app) projesinden uyarlanmıştır. Özgün projenin telif hakkı ve MIT lisans bildirimi `LICENSE.md` dosyasında korunmaktadır.
+
+GHD Spor'a özgü eklemeler:
+- Global Hukukçular Derneği marka kimliği, Türkçe arayüz ve landing page
+- Üyelik başvuru sistemi (doğum tarihi, hukuk statüsü, e-Devlet belgesi, KVKK onayı)
+- Üyelik onayı ve erişim kontrolü (PocketBase migration + hook + middleware)
+- Admin üye onay ekranı
+- Türkçe KVKK aydınlatma metni ve üyelik koşulları
+
+Marka logosu Global Hukukçular Derneği'ne aittir; ilgili haklar saklıdır.

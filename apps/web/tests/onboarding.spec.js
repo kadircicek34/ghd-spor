@@ -1,0 +1,220 @@
+import { test, expect } from '@playwright/test'
+import { dismissOverlays, suppressOverlays, selectDay, TEST_PASS, TEST_NAME } from './helpers.js'
+
+/**
+ * Golden path: onboarding completo + activación de programa real.
+ *
+ * A diferencia de smoke.spec.js (que salta el wizard con "Ya conozco la app"),
+ * este spec recorre los 7 pasos (welcome → basics → essentials → health →
+ * program → reminder → personalizing; #820 fusionó los antiguos "goals" y
+ * "training" en un único paso de objetivo + nivel), selecciona el programa
+ * sembrado "Intermedio – Balance Total" y verifica que:
+ *   1. user_programs tiene el enrollment is_current=true en PB
+ *   2. workout_reminders tiene el recordatorio por defecto del paso nuevo (#695)
+ *   3. el dashboard muestra el programa activo (no el fallback)
+ *   4. /workout muestra los días del programa real ("Push – Pecho y tríceps",
+ *      que no existe en packages/core/data/workouts)
+ *
+ * Requiere el catálogo sembrado (scripts/seed-program.mjs), igual que el
+ * segundo test de smoke.spec.js.
+ */
+const PB_URL = process.env.PB_URL || 'http://127.0.0.1:8090'
+
+/** Signup SIN saltar el onboarding (no usar helpers.register, que lo salta). */
+async function signup(page) {
+  const email = `pw_ob_${Date.now()}_${Math.random().toString(36).slice(2, 7)}@test.com`
+
+  // El InstallPrompt programa su timer de 5s al montarse, así que el dismiss
+  // tiene que estar escrito antes de que arranque la app: con `page.evaluate`
+  // después del `goto` el efecto ya ha corrido y el temporizador ya está en
+  // marcha, y el prompt acaba apareciendo a mitad del wizard.
+  await suppressOverlays(page)
+  await page.goto('/auth?mode=signup')
+
+  const nameField = page.getByPlaceholder(/^name$|^nombre$/i)
+  await expect(nameField).toBeVisible({ timeout: 10000 })
+  await nameField.fill(TEST_NAME)
+  await page.getByPlaceholder(/^email$/i).fill(email)
+  await page.getByPlaceholder(/^password$|^contraseña$/i).fill(TEST_PASS)
+  await page.getByRole('button', { name: /create account|crear cuenta/i }).click()
+  return email
+}
+
+/** Lee token + userId del authStore de PB persistido en localStorage. */
+async function readAuth(page) {
+  return page.evaluate(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')
+      return { token: parsed?.token || '', userId: parsed?.record?.id || parsed?.model?.id || '' }
+    } catch {
+      return { token: '', userId: '' }
+    }
+  })
+}
+
+test('onboarding completo activa el programa elegido (wizard de 7 pasos)', async ({ page, request }) => {
+  test.setTimeout(150_000)
+
+  await signup(page)
+
+  // ── Paso 0: Welcome ──────────────────────────────────────────────────────
+  const startBtn = page.getByRole('button', { name: /^EMPEZAR$|^START$/i })
+  await expect(startBtn).toBeVisible({ timeout: 15000 })
+
+  // Ya autenticados: el uid se usa más abajo para leer el programa activo
+  const { userId } = await readAuth(page)
+  expect(userId, 'no hay userId tras el signup').toBeTruthy()
+
+  await startBtn.click()
+
+  // ── Paso 1: Basics (todo opcional, sin validación) ───────────────────────
+  await expect(page.getByText(/CUÉNTANOS DE TI|TELL US ABOUT YOU/i)).toBeVisible({ timeout: 8000 })
+  await page.locator('#ob-weight').fill('75')
+  await page.locator('#ob-height').fill('175')
+  await page.locator('#ob-age').fill('30')
+  await page.getByRole('button', { name: /^(Hombre|Male)/i }).click()
+  await page.getByRole('button', { name: /^(CONTINUAR|CONTINUE)$/i }).click()
+
+  // ── Paso 2: Essentials — objetivo + nivel fusionados (#820) ──────────────
+  await expect(page.getByText(/TU OBJETIVO|YOUR GOAL/i)).toBeVisible({ timeout: 8000 })
+  await page.getByRole('button', { name: /^(Ganar músculo|Build muscle)/i }).click()
+  await page.getByRole('button', { name: /^(Intermedio|Intermediate)\b/i }).click()
+  await page.getByRole('button', { name: /^(CONTINUAR|CONTINUE)$/i }).click()
+
+  // ── Paso 3: Health (atajo "sin condiciones" guarda y avanza solo) ────────
+  await expect(page.getByText(/^SALUD$|^HEALTH$/i)).toBeVisible({ timeout: 8000 })
+  await page.getByRole('button', { name: /No tengo condiciones|No conditions/i }).click()
+
+  // ── Paso 4: Programa — seleccionar la card escribe user_programs en PB ───
+  await expect(page.getByText(/ELIGE TU PROGRAMA|CHOOSE YOUR PROGRAM/i)).toBeVisible({ timeout: 8000 })
+  await page.getByText(/Balance Total/i).first().click()
+  const continueBtn = page.getByRole('button', { name: /^(CONTINUAR|CONTINUE)$/i })
+  await expect(continueBtn).toBeEnabled({ timeout: 10000 }) // deshabilitado hasta que el write termina
+  await continueBtn.click()
+
+  // ── Paso 5: Recordatorio por defecto (#695) ──────────────────────────────
+  // Desde #815 este paso ya no pide el permiso de notificaciones del
+  // navegador (eso vive solo en la celebración del primer entreno), así que
+  // ya no hace falta simular un `Notification.requestPermission` denegado
+  // para que el guardado no se bloquee con un prompt nativo real.
+  await expect(page.getByText(/A QUÉ HORA SUELES ENTRENAR|WHEN DO YOU USUALLY TRAIN/i)).toBeVisible({ timeout: 8000 })
+  await page.getByRole('button', { name: /^(Noche|Evening)\b/i }).click()
+  await page.getByRole('button', { name: /ACTIVAR RECORDATORIO|TURN ON REMINDER/i }).click()
+
+  // ── Paso 6: Personalizing — sin espera falsa (#820), va directo al plan ──
+  await expect(page.getByText(/TU PLAN|YOUR PLAN/i)).toBeVisible({ timeout: 8000 })
+  // Desde #694 el CTA primario arranca el primer entreno; ir al inicio es el
+  // enlace secundario. Este test cubre el camino al dashboard; el del primer
+  // entreno está en el test de abajo.
+  const firstWorkoutBtn = page.getByRole('button', { name: /EMPEZAR MI PRIMER ENTRENO|START MY FIRST WORKOUT/i })
+  await expect(firstWorkoutBtn).toBeVisible({ timeout: 10000 })
+  // El preview del plan ya muestra el programa elegido
+  await expect(page.getByText(/Balance Total/i).first()).toBeVisible({ timeout: 5000 })
+  await page.getByRole('button', { name: /Ahora no, ir al inicio|Not now, go to home/i }).click()
+
+  // ── Aterrizaje en la app con el programa ACTIVO (no fallback) ────────────
+  await expect(page.getByTestId('app-header')).toBeVisible({ timeout: 15000 })
+  await page.goto('/')
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
+  await dismissOverlays(page)
+  await expect(
+    page.locator('[data-testid="home-today"]').getByText(/Balance Total/i),
+  ).toBeVisible({ timeout: 15000 })
+
+  // onboarding marcado como completado para este usuario
+  const onboardingDone = await page.evaluate(
+    (uid) => localStorage.getItem(`calistenia_onboarding_done_${uid}`),
+    userId,
+  )
+  expect(onboardingDone).toBe('true')
+
+  // ── Ground truth: enrollment is_current=true en PB con el programa real ──
+  const { token } = await readAuth(page)
+  expect(token, 'no hay token de PB en localStorage').toBeTruthy()
+  const res = await request.get(`${PB_URL}/api/collections/user_programs/records`, {
+    headers: { Authorization: token },
+    params: {
+      perPage: 5,
+      filter: `user='${userId}' && is_current=true && status='active'`,
+      expand: 'program',
+    },
+  })
+  expect(res.ok(), 'no se pudo leer user_programs de PB').toBeTruthy()
+  const body = await res.json()
+  expect(body.totalItems, 'no hay enrollment activo en user_programs').toBe(1)
+  expect(JSON.stringify(body.items[0].expand?.program?.name || '')).toContain('Balance Total')
+
+  // ── Ground truth: el paso de recordatorio escribió workout_reminders (#695) ─
+  // Sin días marcados en el paso de entrenamiento cae a lunes-viernes.
+  const remRes = await request.get(`${PB_URL}/api/collections/workout_reminders/records`, {
+    headers: { Authorization: token },
+    params: { perPage: 5, filter: `user='${userId}'` },
+  })
+  expect(remRes.ok(), 'no se pudo leer workout_reminders de PB').toBeTruthy()
+  const remBody = await remRes.json()
+  expect(remBody.totalItems, 'no hay recordatorio de entreno por defecto').toBe(1)
+  expect(remBody.items[0]).toMatchObject({ hour: 20, minute: 30, enabled: true, reminder_type: 'workout' })
+  expect(remBody.items[0].days_of_week).toEqual([1, 2, 3, 4, 5])
+
+  // ── /workout renderiza los días del programa real, no el fallback ────────
+  await page.goto('/workout')
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
+  await dismissOverlays(page)
+  await selectDay(page)
+  // "Push – Pecho y tríceps" (en: "Chest and triceps", los E2E corren en inglés) es del seed; el fallback usa "Empuje + Core Lumbar"
+  await expect(page.getByText(/Pecho y tríceps|Chest and triceps/i).first()).toBeVisible({ timeout: 8000 })
+})
+
+/**
+ * Día 0 (#694, recortado a 3 ejercicios en #812): el CTA primario del último
+ * paso arranca directamente una sesión corta (3 ejercicios, 6 series) en
+ * /session, sin pasar por el home ni
+ * por el prompt de calentamiento. Se recorre el wizard saltando lo opcional.
+ */
+test('el último paso del onboarding arranca el primer entreno en /session', async ({ page }) => {
+  test.setTimeout(120_000)
+
+  await signup(page)
+
+  await page.getByRole('button', { name: /^EMPEZAR$|^START$/i }).click()
+  // Basics y essentials (#820: objetivo + nivel fusionados) son opcionales:
+  // «Omitir por ahora». Principiante viene marcado por defecto en el nivel.
+  await page.getByRole('button', { name: /Omitir por ahora|Skip for now/i }).click()
+  await page.getByRole('button', { name: /Omitir por ahora|Skip for now/i }).click()
+  await page.getByRole('button', { name: /No tengo condiciones ni lesiones|No conditions or injuries/i }).click()
+
+  await expect(page.getByText(/ELIGE TU PROGRAMA|CHOOSE YOUR PROGRAM/i)).toBeVisible({ timeout: 8000 })
+  await page.getByText(/Balance Total/i).first().click()
+  const continueBtn = page.getByRole('button', { name: /^(CONTINUAR|CONTINUE)$/i })
+  await expect(continueBtn).toBeEnabled({ timeout: 10000 })
+  await continueBtn.click()
+
+  // Paso de recordatorio (#695): se salta con «Ahora no». Desde #815 el
+  // permiso de notificaciones queda sin decidir tanto si se salta como si se
+  // guarda el recordatorio —este paso ya no lo toca—, así que la celebración
+  // del primer entreno puede ofrecer el push (#694).
+  await expect(page.getByText(/A QUÉ HORA SUELES ENTRENAR|WHEN DO YOU USUALLY TRAIN/i)).toBeVisible({ timeout: 8000 })
+  await page.getByRole('button', { name: /^(Ahora no|Not now)$/i }).click()
+
+  const firstWorkoutBtn = page.getByRole('button', { name: /EMPEZAR MI PRIMER ENTRENO|START MY FIRST WORKOUT/i })
+  await expect(firstWorkoutBtn).toBeVisible({ timeout: 10000 })
+  await firstWorkoutBtn.click()
+
+  // Aterriza en la sesión activa: primer ejercicio del nivel principiante y
+  // contador de series del entreno corto.
+  await expect(page).toHaveURL(/\/session$/, { timeout: 15000 })
+  await expect(page.getByText(/1\/6 (series|sets)/i).first()).toBeVisible({ timeout: 15000 })
+  await expect(page.getByRole('button', { name: /serie completada|completed set/i }).first()).toBeVisible({ timeout: 5000 })
+
+  // El onboarding queda marcado y la intención pendiente se consumió.
+  const state = await page.evaluate(() => {
+    const parsed = JSON.parse(localStorage.getItem('pocketbase_auth') || '{}')
+    const uid = parsed?.record?.id || parsed?.model?.id || ''
+    return {
+      onboardingDone: localStorage.getItem(`calistenia_onboarding_done_${uid}`),
+      pending: localStorage.getItem('calistenia_first_workout_pending'),
+    }
+  })
+  expect(state.onboardingDone).toBe('true')
+  expect(state.pending).toBeNull()
+})

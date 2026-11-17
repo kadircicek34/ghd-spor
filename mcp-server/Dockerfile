@@ -1,0 +1,73 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY mcp-server/package.json mcp-server/package-lock.json ./mcp-server/
+COPY packages/core/ ./packages/core/
+WORKDIR /app/mcp-server
+RUN npm ci
+
+# `@calistenia/core` entra como `file:../packages/core`: npm lo enlaza con un
+# symlink pero NO instala sus dependencias, y Node resuelve por la ruta REAL —
+# un `import 'dayjs'` dentro de packages/core/lib/*.ts busca en
+# packages/core/node_modules, que aquí no existe (lo crea el `pnpm install` de
+# la raíz del monorepo, que esta imagen no ejecuta). Sin esto, `npm run build`
+# muere al evaluar la entrada (#517).
+#
+# Sólo hace falta en el builder: el bundle inlinea el código de core y deja los
+# paquetes de terceros como imports externos ("dayjs"), que en runtime se
+# resuelven contra mcp-server/node_modules. Por eso todo lo que core necesite
+# en runtime debe estar declarado en mcp-server/package.json igualmente.
+RUN ln -s ../../mcp-server/node_modules ../packages/core/node_modules
+
+COPY mcp-server/tsconfig.json ./
+COPY mcp-server/src/ ./src/
+COPY mcp-server/views/ ./views/
+COPY mcp-server/public/ ./public/
+# `mcp-use build` bundles src/server.ts + every views/<name>/view.tsx into
+# .mcp-use/build/ (index.js + manifest.json + views/<name>/assets + views/public).
+# It evaluates the entry module while doing so, so it must not need any
+# runtime secret (see src/bootstrap.ts for the scheduler guard).
+RUN npm run build
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+FROM node:22-alpine
+
+# Public origin of this server, baked at build time. CI supplies the real value
+# via --build-arg SERVER_URL=${{ vars.SERVER_URL }} (see build-ai-api.yml); the
+# localhost default only applies to a bare `docker build` with no arg. Required
+# so OAuth discovery metadata advertises the public domain. A runtime
+# `-e SERVER_URL=...` still overrides this if needed.
+ARG SERVER_URL=http://localhost:3001
+ENV SERVER_URL=${SERVER_URL}
+
+ENV NODE_ENV=production
+# `mcp-use start` binds 127.0.0.1 unless HOST says otherwise, and reads PORT
+# (defaulting to 3000) — both must be explicit inside a container.
+ENV HOST=0.0.0.0
+ENV PORT=3001
+
+WORKDIR /app
+
+COPY mcp-server/package.json mcp-server/package-lock.json ./mcp-server/
+COPY packages/core/ ./packages/core/
+WORKDIR /app/mcp-server
+# mcp-use (and its CLI, which owns `start`) is a regular dependency, so the
+# production install is enough to serve the build.
+RUN npm ci --omit=dev
+
+# Prebuilt server + views (see builder). `mcp-use start` reads
+# .mcp-use/build/manifest.json and serves the view assets from there; the
+# `public/` fonts are copied into .mcp-use/build/views/public by the build.
+COPY --from=builder /app/mcp-server/.mcp-use/build ./.mcp-use/build
+COPY mcp-server/data/ ./data/
+
+RUN adduser -D -u 1001 apiuser
+USER apiuser
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://localhost:3001/api/health').then(r=>{if(!r.ok)throw r.status;process.exit(0)}).catch(()=>process.exit(1))"
+
+CMD ["npx", "mcp-use", "start", "--path", "."]

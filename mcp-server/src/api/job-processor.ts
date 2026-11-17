@@ -1,0 +1,288 @@
+/**
+ * Background job processor for async AI nutrition tasks.
+ *
+ * Fetches a job from PocketBase, runs the appropriate AI function,
+ * stores the result, and sends a push notification on completion.
+ */
+
+import { analyzeMealImage } from "./meal-analyzer.js";
+import { lookupFoodByName } from "./food-lookup.js";
+import { generateDailyMealPlan, generateWeeklyMealPlan } from "./meal-plan-generator.js";
+import { generatePantryPlan } from "./pantry-plan-generator.js";
+import { sendPushToUser, type LocalizedText } from "./push-sender.js";
+import { getAdminPB } from "./admin-pb.js";
+import { resolveTier, type Tier } from "./model-resolver.js";
+
+// Re-export for any existing consumers
+export { getAdminPB } from "./admin-pb.js";
+
+// Mirrors mcpuse/api-routes.ts MAX_PENDING_JOBS.
+export const MAX_PENDING_JOBS = 2;
+
+export async function hasJobCapacity(userId: string): Promise<boolean> {
+  const pb = await getAdminPB();
+  const active = await pb.collection("ai_jobs").getList(1, 1, {
+    filter: pb.filter("user = {:uid} && (status = 'pending' || status = 'processing')", { uid: userId }),
+  });
+  return active.totalItems < MAX_PENDING_JOBS;
+}
+
+// Monday of current or specified week (input.week_start, or today if absent).
+function resolveWeekStart(input: any): Date {
+  let weekStart: Date;
+  if (input.week_start) {
+    weekStart = new Date(input.week_start);
+  } else {
+    weekStart = new Date();
+    const dow = weekStart.getDay(); // 0=Sun
+    const diff = dow === 0 ? -6 : 1 - dow;
+    weekStart.setDate(weekStart.getDate() + diff);
+  }
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+}
+
+// ── Job processor ────────────────────────────────────────────────────────────
+
+export async function processJob(jobId: string): Promise<void> {
+  const pb = await getAdminPB();
+
+  const job = await pb.collection("ai_jobs").getOne(jobId);
+
+  await pb.collection("ai_jobs").update(jobId, { status: "processing" });
+
+  const input = typeof job.input === "string" ? JSON.parse(job.input) : job.input;
+  const tier: Tier = resolveTier(input);
+
+  let result: any;
+  let notifTitle: LocalizedText;
+  let notifBody: LocalizedText;
+
+  try {
+    switch (job.type) {
+      case "analyze-meal": {
+        // Download images from PocketBase file URLs
+        const imageFileNames: string[] = job.input_images ?? [];
+        const images = await Promise.all(
+          imageFileNames.map(async (fileName: string) => {
+            const url = pb.files.getURL(job, fileName);
+            const response = await fetch(url);
+            const arrayBuf = await response.arrayBuffer();
+            const mimeType =
+              response.headers.get("content-type") ?? "image/jpeg";
+            return { buffer: Buffer.from(arrayBuf), mimeType };
+          })
+        );
+
+        // Build user context for quality scoring if provided
+        let userContext: import("./meal-analyzer.js").UserContext | undefined;
+        if (input.user_context) {
+          userContext = input.user_context;
+        }
+
+        result = await analyzeMealImage({
+          images,
+          mealType: input.meal_type ?? "comida",
+          description: input.description,
+          tier,
+          userContext,
+        });
+        notifTitle = { es: "Comida analizada", en: "Meal analyzed" };
+        notifBody = {
+          es: "Toca para revisar los alimentos detectados.",
+          en: "Tap to review the detected foods.",
+        };
+        break;
+      }
+
+      case "lookup-food": {
+        result = await lookupFoodByName({
+          foodName: input.food_name,
+          tier,
+        });
+        notifTitle = { es: "Alimento encontrado", en: "Food found" };
+        notifBody = {
+          es: `Datos nutricionales de "${input.food_name}" listos.`,
+          en: `Nutrition info for "${input.food_name}" is ready.`,
+        };
+        break;
+      }
+
+      case "generate-meal-plan": {
+        result = await generateDailyMealPlan({
+          remainingCalories: Number(input.remaining_calories ?? 0),
+          remainingProtein: Number(input.remaining_protein ?? 0),
+          remainingCarbs: Number(input.remaining_carbs ?? 0),
+          remainingFat: Number(input.remaining_fat ?? 0),
+          loggedMealTypes: Array.isArray(input.logged_meal_types)
+            ? input.logged_meal_types
+            : [],
+          pantryItems: Array.isArray(input.pantry_items) ? input.pantry_items : [],
+          tier,
+        });
+        notifTitle = { es: "Plan listo", en: "Plan ready" };
+        notifBody = { es: "Toca para ver las comidas sugeridas.", en: "Tap to see the suggested meals." };
+        break;
+      }
+
+      case "generate-weekly-meal-plan": {
+        const weeklyResult = await generateWeeklyMealPlan({
+          dailyCalories: Number(input.daily_calories ?? 0),
+          dailyProtein: Number(input.daily_protein ?? 0),
+          dailyCarbs: Number(input.daily_carbs ?? 0),
+          dailyFat: Number(input.daily_fat ?? 0),
+          goal: input.goal ?? "maintain",
+          pantryItems: Array.isArray(input.pantry_items) ? input.pantry_items : [],
+          tier,
+        });
+
+        // Archive any existing active plan for this user
+        try {
+          const activePlans = await pb.collection("weekly_meal_plans").getFullList({
+            filter: pb.filter("user = {:uid} && status = 'active'", { uid: job.user }),
+          });
+          for (const p of activePlans) {
+            await pb.collection("weekly_meal_plans").update(p.id, { status: "archived" });
+          }
+        } catch { /* no active plans, that's fine */ }
+
+        // Compute week_start (Monday of current or specified week)
+        const weekStart = resolveWeekStart(input);
+
+        // Create the plan record
+        const planRecord = await pb.collection("weekly_meal_plans").create({
+          user: job.user,
+          week_start: weekStart.toISOString(),
+          status: "active",
+          goal_snapshot: {
+            calories: Number(input.daily_calories),
+            protein: Number(input.daily_protein),
+            carbs: Number(input.daily_carbs),
+            fat: Number(input.daily_fat),
+          },
+          ai_model: weeklyResult.model_used,
+        });
+
+        // Create 7 day records
+        for (const day of weeklyResult.days) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(dayDate.getDate() + day.day_index);
+
+          const meals = day.meals.map((m: any, i: number) => ({
+            ...m,
+            id: `${planRecord.id}_d${day.day_index}_${i}`,
+            logged: false,
+          }));
+
+          await pb.collection("weekly_plan_days").create({
+            plan: planRecord.id,
+            user: job.user,
+            date: dayDate.toISOString(),
+            day_index: day.day_index,
+            meals,
+            notes: day.notes,
+          });
+        }
+
+        result = { plan_id: planRecord.id, ...weeklyResult };
+        notifTitle = { es: "Plan semanal listo", en: "Weekly plan ready" };
+        notifBody = {
+          es: "Toca para ver tu plan de comidas de la semana.",
+          en: "Tap to see your meal plan for the week.",
+        };
+        break;
+      }
+
+      case "generate-pantry-plan": {
+        const pantryItems = Array.isArray(input.pantry_items) ? input.pantry_items : [];
+        const goals = input.goals ?? null;
+
+        const weekResult = await generatePantryPlan({
+          horizon: "week",
+          pantryItems,
+          goals,
+          targetDate: input.week_start ?? null,
+          tier,
+        });
+
+        // Archive any existing active plan for this user
+        try {
+          const activePlans = await pb.collection("weekly_meal_plans").getFullList({
+            filter: pb.filter("user = {:uid} && status = 'active'", { uid: job.user }),
+          });
+          for (const p of activePlans) {
+            await pb.collection("weekly_meal_plans").update(p.id, { status: "archived" });
+          }
+        } catch { /* no active plans, that's fine */ }
+
+        const weekStart = resolveWeekStart(input);
+
+        const planRecord = await pb.collection("weekly_meal_plans").create({
+          user: job.user,
+          week_start: weekStart.toISOString(),
+          status: "active",
+          goal_snapshot: goals,
+          ai_model: (weekResult as any).model_used,
+          pantry_snapshot: pantryItems,
+        });
+
+        for (const day of (weekResult as any).days) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(dayDate.getDate() + day.day_index);
+          const meals = day.meals.map((m: any, i: number) => ({
+            ...m,
+            id: `${planRecord.id}_d${day.day_index}_${i}`,
+            logged: false,
+          }));
+          await pb.collection("weekly_plan_days").create({
+            plan: planRecord.id,
+            user: job.user,
+            date: dayDate.toISOString(),
+            day_index: day.day_index,
+            meals,
+            notes: day.notes,
+          });
+        }
+
+        result = { plan_id: planRecord.id, ...(weekResult as Record<string, unknown>) };
+        notifTitle = { es: "Plan desde tu despensa listo", en: "Plan from your pantry ready" };
+        notifBody = {
+          es: "Toca para ver tu plan de comidas de la semana.",
+          en: "Tap to see your meal plan for the week.",
+        };
+        break;
+      }
+
+      default:
+        throw new Error(`Tipo de trabajo desconocido: ${job.type}`);
+    }
+
+    await pb.collection("ai_jobs").update(jobId, {
+      status: "completed",
+      result,
+    });
+
+    const notifUrl = job.type === "generate-weekly-meal-plan" || job.type === "generate-pantry-plan"
+      ? "/nutrition?tab=weekly"
+      : `/nutrition/log?job=${jobId}`;
+
+    await sendPushToUser(job.user, {
+      title: notifTitle,
+      body: notifBody,
+      url: notifUrl,
+    }).catch((err) => console.error("[push-error]", err));
+  } catch (err: any) {
+    const errorMessage = err.message ?? "Error desconocido";
+
+    await pb
+      .collection("ai_jobs")
+      .update(jobId, { status: "failed", error: errorMessage })
+      .catch((e) => console.error("[job-update-error]", e));
+
+    await sendPushToUser(job.user, {
+      title: { es: "No se pudo completar el analisis", en: "We couldn't complete the analysis" },
+      body: { es: "Abre la app para intentar de nuevo.", en: "Open the app to try again." },
+      url: "/nutrition",
+    }).catch((e) => console.error("[push-error]", e));
+  }
+}

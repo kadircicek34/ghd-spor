@@ -1,0 +1,275 @@
+/**
+ * Panel de acciones post-entreno (#347).
+ *
+ * Vive dentro de la pantalla de celebración, debajo del resultado, y concentra
+ * el bucle de crecimiento: compartir (primaria), invitar, retos, progreso y
+ * repetir. Sustituye a los CTAs sueltos que había antes en `CelebrateScreen`,
+ * incluido el `ReferralPrompt` condicional.
+ *
+ * Toda la celebración es un `onClick` que lleva al dashboard, así que **cada
+ * control de aquí tiene que parar la propagación**: sin eso, la primera
+ * pulsación en cualquier acción te saca de la pantalla.
+ */
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { buildPostWorkoutActions, trackPostWorkoutAction, type PostWorkoutActionId } from '@calistenia/core/lib/post-workout-actions'
+import { usePostWorkoutChallenge } from '@calistenia/core/hooks/usePostWorkoutChallenge'
+import { CANONICAL_ANALYTICS_EVENTS, trackCanonicalEvent } from '@calistenia/core/lib/analytics'
+import {
+  markReferralPromptHandled,
+  markReferralPromptViewed,
+  shouldShowReferralPrompt,
+} from '@calistenia/core/lib/referral-prompt'
+import type { Exercise } from '@calistenia/core/types'
+import WorkoutShareCard from './WorkoutShareCard'
+import { shareReferralInvite, type ShareMethod } from '../lib/share'
+import { cn } from '../lib/utils'
+import { useSessionIdentity } from '../hooks/useSessionIdentity'
+
+interface Quote { q: string; a: string }
+
+export interface PostWorkoutActionsProps {
+  workoutKey: string
+  workoutTitle: string
+  totalSets: number
+  durationMin: number
+  /** Sesiones de la cuenta, para decidir si toca el aviso de invitar (#803). */
+  totalSessions: number
+  exercises: Exercise[]
+  quote?: Quote | null
+  /** Reinicia la misma rutina; si no se pasa, la acción no aparece. */
+  onRepeat?: () => void
+  /** Cierra la sesión activa y navega. El panel nunca navega por su cuenta. */
+  onNavigateAway: (path: string) => void
+}
+
+export default function PostWorkoutActions({
+  workoutKey,
+  workoutTitle,
+  totalSets,
+  durationMin,
+  totalSessions,
+  exercises,
+  quote,
+  onRepeat,
+  onNavigateAway,
+}: PostWorkoutActionsProps) {
+  const { t } = useTranslation()
+  // La identidad se lee aquí en lugar de bajarla dos niveles desde la página:
+  // el AuthProvider ya está montado por encima (#475).
+  const { userName, avatarUrl, userId, referralCode } = useSessionIdentity()
+  // Solo para esta finalización: no se persiste, así que la próxima sesión
+  // completada vuelve a mostrar el panel.
+  const [dismissed, setDismissed] = useState(false)
+  const [promptVisible, setPromptVisible] = useState(false)
+
+  const { challenge } = usePostWorkoutChallenge(userId ?? null, exercises.map(e => e.id))
+
+  const actions = buildPostWorkoutActions({
+    canInvite: !!referralCode,
+    canRepeat: !!onRepeat,
+    affectedChallengeId: challenge?.id ?? null,
+  })
+
+  // #803: aviso automático de invitar en el primer entreno (paridad con móvil).
+  useEffect(() => {
+    if (dismissed) return
+    if (!shouldShowReferralPrompt({ userId, referralCode, totalSessions })) return
+    markReferralPromptViewed(userId!)
+    setPromptVisible(true)
+    trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.referralPromptViewed, {
+      surface: 'post_workout', source: 'workout_completion', workout_id: workoutKey, result: 'viewed',
+    })
+  }, [dismissed, userId, referralCode, totalSessions, workoutKey])
+
+  const handlePromptInvite = useCallback(async (method: ShareMethod) => {
+    if (!userId || !referralCode) return
+    const ok = await shareReferralInvite(userName || '', referralCode, method)
+    if (!ok) return
+    markReferralPromptHandled(userId)
+    setPromptVisible(false)
+    trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.inviteSent, {
+      surface: 'post_workout', source: 'workout_completion', workout_id: workoutKey,
+      share_type: method, result: method === 'copy' ? 'copied' : 'sent',
+    })
+  }, [userId, referralCode, userName, workoutKey])
+
+  const handlePromptDismiss = useCallback(() => {
+    if (userId) markReferralPromptHandled(userId)
+    setPromptVisible(false)
+  }, [userId])
+
+  const track = useCallback((action: PostWorkoutActionId) => {
+    trackPostWorkoutAction(action, { workoutKey, challengeId: action === 'challenge' ? challenge?.id : null })
+  }, [workoutKey, challenge?.id])
+
+  const handleInvite = useCallback(async () => {
+    if (!referralCode) return
+    track('invite')
+    const ok = await shareReferralInvite(userName || '', referralCode)
+    if (ok) {
+      trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.inviteSent, {
+        surface: 'post_workout', source: 'workout_completion', share_type: 'invite_link', result: 'sent',
+      })
+    }
+  }, [referralCode, userName, track])
+
+  const handleChallenge = useCallback(() => {
+    track('challenge')
+    if (challenge) {
+      trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.challengeViewed, {
+        surface: 'post_workout',
+        source: 'workout_completion',
+        challenge_id: challenge.id,
+        participant_count: challenge.participantCount,
+        result: 'viewed',
+      })
+    }
+    onNavigateAway(challenge ? `/challenges/${challenge.id}` : '/challenges')
+  }, [challenge, onNavigateAway, track])
+
+  const handleProgress = useCallback(() => {
+    track('progress')
+    onNavigateAway('/progress')
+  }, [onNavigateAway, track])
+
+  const handleRepeat = useCallback(() => {
+    track('repeat')
+    onRepeat?.()
+  }, [onRepeat, track])
+
+  if (dismissed) return null
+
+  const firstWorkout = totalSessions === 1
+
+  return (
+    // a11y: contenedor que solo frena la propagación del clic; los controles
+    // reales de dentro son botones enfocables. (Sin regla jsx-a11y activa: #484)
+    <div
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      className="w-full max-w-[380px] text-left"
+      style={{ animation: 'fadeUp 0.5s 0.6s ease-out both' }}
+    >
+      <div className="h-px mb-4 bg-gradient-to-r from-transparent via-border to-transparent" />
+
+      {promptVisible && (
+        <div className="mb-4 border-l border-lime pl-3.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="font-mono text-[9px] uppercase tracking-[3px] text-lime">
+              {t(firstWorkout ? 'referral.prompt.kickerFirst' : 'referral.prompt.kicker')}
+            </div>
+          </div>
+          <p className="mb-3 text-[13px] leading-[18px] text-foreground/80">
+            {t(firstWorkout ? 'referral.prompt.questionFirst' : 'referral.prompt.question')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handlePromptInvite('native')}
+              className="min-h-10 px-3 py-2 rounded-md border border-lime bg-lime text-lime-foreground font-mono text-[10px] tracking-wide hover:bg-lime/90"
+            >
+              {t('referral.prompt.native')}
+            </button>
+            <button
+              onClick={() => handlePromptInvite('copy')}
+              className="min-h-10 px-3 py-2 rounded-md border border-border font-mono text-[10px] tracking-wide hover:bg-muted/40"
+            >
+              {t('referral.prompt.copy')}
+            </button>
+            <button
+              onClick={() => handlePromptInvite('whatsapp')}
+              className="min-h-10 px-3 py-2 rounded-md border border-border font-mono text-[10px] tracking-wide hover:bg-muted/40"
+            >
+              {t('referral.prompt.whatsapp')}
+            </button>
+          </div>
+          <button
+            onClick={handlePromptDismiss}
+            className="mt-3 py-1 font-mono text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            {t('referral.prompt.dismiss')}
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-mono text-[9px] uppercase tracking-[3px] text-muted-foreground">
+          {t('postWorkout.kicker')}
+        </div>
+        <button
+          onClick={() => { if (promptVisible && userId) markReferralPromptHandled(userId); setDismissed(true) }}
+          aria-label={t('postWorkout.dismiss')}
+          title={t('postWorkout.dismiss')}
+          className="size-7 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
+        >
+          <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {actions.map(action => {
+          if (action.id === 'share') {
+            return (
+              <WorkoutShareCard
+                key="share"
+                workoutTitle={workoutTitle}
+                totalSets={totalSets}
+                durationMin={durationMin}
+                exercises={exercises}
+                quote={quote}
+                userName={userName}
+                avatarUrl={avatarUrl}
+                referralCode={referralCode}
+                label={t('postWorkout.share')}
+                variant="limeSolid"
+                className="w-full h-12 font-bebas text-xl tracking-[2px]"
+                onPress={() => track('share')}
+              />
+            )
+          }
+          if (action.id === 'invite') {
+            return <ActionRow key="invite" label={t('postWorkout.invite')} hint={t('postWorkout.inviteHint')} onClick={handleInvite} />
+          }
+          if (action.id === 'challenge') {
+            return (
+              <ActionRow
+                key="challenge"
+                label={challenge ? t('postWorkout.challengeActive', { title: challenge.title }) : t('postWorkout.challenge')}
+                hint={challenge ? t('postWorkout.challengeActiveHint') : t('postWorkout.challengeHint')}
+                accent={!!challenge}
+                onClick={handleChallenge}
+              />
+            )
+          }
+          if (action.id === 'progress') {
+            return <ActionRow key="progress" label={t('postWorkout.progress')} hint={t('postWorkout.progressHint')} onClick={handleProgress} />
+          }
+          return <ActionRow key="repeat" label={t('postWorkout.repeat')} hint={t('postWorkout.repeatHint')} onClick={handleRepeat} />
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ActionRow({ label, hint, onClick, accent }: { label: string; hint: string; onClick: () => void; accent?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full flex items-center gap-3 px-3.5 py-2.5 border rounded-md text-left transition-colors',
+        accent
+          ? 'border-lime/40 bg-lime/5 hover:bg-lime/10'
+          : 'border-border hover:bg-muted/40',
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className={cn('text-[13px] truncate', accent ? 'text-lime' : 'text-foreground')}>{label}</div>
+        <div className="font-mono text-[10px] tracking-wide text-muted-foreground truncate">{hint}</div>
+      </div>
+      <svg className="size-3.5 flex-shrink-0 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </button>
+  )
+}

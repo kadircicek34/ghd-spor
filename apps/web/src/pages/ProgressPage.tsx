@@ -1,0 +1,384 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { WORKOUTS } from '@calistenia/core/data/workouts'
+import { Badge } from '../components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
+import { cn } from '../lib/utils'
+import { relativeDate } from '@calistenia/core/lib/dateUtils'
+import { PHASE_COLORS } from '@calistenia/core/lib/style-tokens'
+import { useTrainingStats } from '@calistenia/core/hooks/useTrainingStats'
+import { useCatalogIndex } from '@calistenia/core/hooks/useCatalogIndex'
+import { buildExerciseResolver, groupLogsByResolvedExercise } from '@calistenia/core/lib/exercise-resolver'
+import { useWorkoutState, useWorkoutActions } from '../contexts/WorkoutContext'
+import { useAuthState } from '../contexts/AuthContext'
+import type { ExerciseLog } from '@calistenia/core/types'
+import ProgressSummary from '../components/progress/ProgressSummary'
+import ExerciseChart from '../components/progress/ExerciseChart'
+import WeightTracker from '../components/progress/WeightTracker'
+import BodyPhotosTimeline from '../components/progress/BodyPhotosTimeline'
+import WeightProgressionChart from '../components/progress/WeightProgressionChart'
+import VolumeLoadChart from '../components/progress/VolumeLoadChart'
+import TrainingStatsPanel from '../components/progress/stats/TrainingStatsPanel'
+import MuscleBarsChart from '../components/progress/stats/MuscleBarsChart'
+import OneRepMaxCalculator from '../components/progress/OneRepMaxCalculator'
+import PhotoComparator from '../components/progress/PhotoComparator'
+import PhasePhotoTimeline from '../components/progress/PhasePhotoTimeline'
+import BodyMeasurementsTracker from '../components/progress/BodyMeasurementsTracker'
+import BodyFatPanel from '../components/progress/BodyFatPanel'
+import ExportData from '../components/progress/ExportData'
+import { WeeklyStreakCard, MonthActivityMap, ProgressMoreRows } from '../components/progress/ProgressOverview'
+import BattleHistory from '../components/progress/BattleHistory'
+import { Input } from '../components/ui/input'
+import { useWeight } from '@calistenia/core/hooks/useWeight'
+import { useBodyPhotos } from '@calistenia/core/hooks/useBodyPhotos'
+import { CANONICAL_ANALYTICS_EVENTS, trackCanonicalEvent } from '@calistenia/core/lib/analytics'
+
+function ChartsExerciseList({ exerciseLogs, exerciseNames, t }: { exerciseLogs: Record<string, ExerciseLog[]>; exerciseNames: Record<string, string>; t: (key: string) => string }) {
+  const [search, setSearch] = useState('')
+  const entries = Object.entries(exerciseLogs)
+  // Se busca sobre el nombre pintado Y sobre la clave: quien ya se sabe el id
+  // crudo de un ejercicio sigue encontrándolo.
+  const filtered = search
+    ? entries.filter(([exId]) => {
+        const q = search.toLowerCase()
+        return exId.replace(/_/g, ' ').toLowerCase().includes(q)
+          || (exerciseNames[exId] ?? '').toLowerCase().includes(q)
+      })
+    : entries
+  const showSearch = entries.length > 6
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-[10px] text-muted-foreground tracking-[3px] uppercase">{t('progress.chartsByExercise')}</div>
+        {showSearch && (
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('progress.searchExercise')}
+            className="h-7 w-40 text-xs"
+          />
+        )}
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {filtered.map(([exId, logs]) => (
+          <ExerciseChart
+            key={exId}
+            exerciseName={exerciseNames[exId] ?? exId}
+            logs={logs}
+            showSessionType
+          />
+        ))}
+        {filtered.length === 0 && search && (
+          <div className="text-sm text-muted-foreground text-center py-4">{t('common.noResults')}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const PROGRESS_TABS = ['resumen', 'estadisticas', 'graficas', 'cuerpo']
+
+interface SessionLog {
+  date: string
+  workoutKey: string
+  title: string
+  phase: number | undefined
+  note: string
+  isFree: boolean
+  exerciseCount: number
+  totalSets: number
+}
+
+export default function ProgressPage() {
+  const { t, i18n } = useTranslation()
+  const { progress, settings, activeProgram, programProgress } = useWorkoutState()
+  const { getWorkout } = useWorkoutActions()
+  const { userId } = useAuthState()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Deep-link a una tab concreta (p.ej. /progress?tab=cuerpo desde el CTA de
+  // primera medición post-onboarding, #227). Desde #856 la pestaña la manda la
+  // URL: las filas de fotos y peso del Resumen abren Cuerpo.
+  const tabParam = searchParams.get('tab') || ''
+  const activeTab = PROGRESS_TABS.includes(tabParam) ? tabParam : 'resumen'
+  const initialTab = activeTab
+  const changeTab = (tab: string) => setSearchParams(tab === 'resumen' ? {} : { tab }, { replace: true })
+  const openBody = () => { changeTab('cuerpo'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const { weights } = useWeight(userId || null)
+  const { photos, getPhotosByPhase, uploadPhotos } = useBodyPhotos(userId || null)
+  // #616: fase derivada del programa activo, no del entero global.
+  const currentPhase = programProgress.currentPhase || 1
+
+  const allLogs = useMemo<SessionLog[]>(() => {
+    return Object.entries(progress)
+      .filter(([k, v]) => k.startsWith('done_') && !(v as { cardioSessionId?: string }).cardioSessionId)
+      .map(([key, val]) => {
+        const parts = key.split('_')
+        const date = parts[1]
+        const workoutKey = parts.slice(2).join('_')
+        const isFree = workoutKey.startsWith('free_')
+        const workout = isFree ? null : WORKOUTS[workoutKey]
+        const sessionEntries = Object.values(progress).filter(v => {
+          const log = v as ExerciseLog
+          return log.exerciseId && log.sets && log.date === date && log.workoutKey === workoutKey
+        }) as ExerciseLog[]
+        const exerciseCount = isFree ? sessionEntries.length : 0
+        const totalSets = sessionEntries.reduce((acc, log) => acc + log.sets.length, 0)
+        return {
+          date, workoutKey,
+          title: isFree ? t('progress.freeSession') : (workout?.title || workoutKey),
+          phase: isFree ? undefined : workout?.phase,
+          note: (val as { note?: string }).note || '',
+          isFree,
+          exerciseCount,
+          totalSets,
+        }
+      })
+      .sort((a, b) => b.date.localeCompare(a.date))
+  }, [progress, t])
+
+  // Los gráficos etiquetaban cada serie con la CLAVE cruda del ProgressMap, así
+  // que un ejercicio registrado como `arm_circles` salía «arm circles» y uno de
+  // programa como «lun_1_9» (#690). El mismo resolutor que ya nombra las
+  // estadísticas: catálogo primero y, si no, el ejercicio del programa activo
+  // en ese `workoutKey`. Lo que no resuelve se queda con su clave, como antes.
+  //
+  // Y se AGRUPA por esa misma identidad (#692): la plancha de un programa viejo
+  // vive en el historial como `mie_1_10` y la de una sesión libre como `plank`;
+  // agrupar por la clave cruda pintaba dos «Plancha» en las gráficas y el 1RM.
+  const { index: catalogIndex } = useCatalogIndex()
+  const resolveExercise = useMemo(
+    () => buildExerciseResolver({ index: catalogIndex, getWorkout, locale: i18n.language }),
+    [catalogIndex, getWorkout, i18n.language],
+  )
+  const { logs: exerciseLogs, names: exerciseNames } = useMemo(
+    () => groupLogsByResolvedExercise(progress, resolveExercise),
+    [progress, resolveExercise],
+  )
+
+  // #636 §4: la pantalla de progreso no emitía nada, así que no se sabía si
+  // alguien vuelve a mirar lo que ha hecho — que es la señal de retención más
+  // barata que tiene el producto.
+  useEffect(() => {
+    trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.progressViewed, {
+      surface: 'progress', source: 'progress_page',
+      tab: initialTab,
+      session_count: allLogs.length,
+      phase: currentPhase,
+      has_program: !!activeProgram,
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- una vista por visita
+
+  const programName = activeProgram?.name || null
+  const freeLogCount = allLogs.filter(l => l.isFree).length
+
+  // Sustituye al gráfico de músculos anterior (#596): series REGISTRADAS a
+  // 4 semanas, no series planificadas de un mapa estático.
+  const { stats: fourWeekStats } = useTrainingStats(progress, getWorkout, '4w')
+
+  const lastWeight = useMemo(() => {
+    if (weights.length === 0) return null
+    const last = [...weights].sort((a, b) => b.date.localeCompare(a.date))[0]
+    return { kg: last.weight_kg, date: relativeDate(last.date) }
+  }, [weights])
+
+  return (
+    <div className="max-w-[860px] mx-auto px-4 py-6 md:px-6 md:py-8">
+      <div className="flex items-end gap-4 mb-6 flex-wrap">
+        <div className="font-bebas text-[36px] md:text-[52px] leading-none">{t('progress.title')}</div>
+        {programName && (
+          <Badge variant="outline" className="border-lime/25 text-lime bg-lime/5 mb-1.5">
+            {programName.toUpperCase()}
+          </Badge>
+        )}
+      </div>
+
+      {allLogs.length === 0 ? (
+        <>
+          <div className="text-center py-16 px-5 text-muted-foreground">
+            <div className="font-bebas text-3xl mb-2">{t('progress.noData')}</div>
+            <div className="text-sm leading-relaxed max-w-sm mx-auto">
+              {t('progress.noDataDesc')}
+            </div>
+          </div>
+          <ProgressMoreRows onOpenBody={() => navigate('/progress?tab=cuerpo')} lastWeight={lastWeight} />
+        </>
+      ) : (
+        <Tabs value={activeTab} onValueChange={changeTab} className="w-full">
+          <TabsList className="w-full mb-6">
+            <TabsTrigger value="resumen" className="flex-1 px-1.5 text-xs tracking-[0.5px] uppercase">{t('progress.tab.summary')}</TabsTrigger>
+            <TabsTrigger value="estadisticas" className="flex-1 px-1.5 text-xs tracking-[0.5px] uppercase">{t('progress.tab.statsShort')}</TabsTrigger>
+            <TabsTrigger value="graficas" className="flex-1 px-1.5 text-xs tracking-[0.5px] uppercase">{t('progress.tab.charts')}</TabsTrigger>
+            <TabsTrigger value="cuerpo" className="flex-1 px-1.5 text-xs tracking-[0.5px] uppercase">{t('progress.tab.body')}</TabsTrigger>
+          </TabsList>
+
+          {/* ── Tab 1: Resumen ── */}
+          <TabsContent value="resumen">
+            {/* #856: racha semanal, mapa del mes y lo que salió del inicio. */}
+            <div className="flex flex-col gap-7 mb-8">
+              <WeeklyStreakCard />
+              <MonthActivityMap />
+              <ProgressMoreRows onOpenBody={openBody} lastWeight={lastWeight} />
+            </div>
+
+            {/* Progress Summary */}
+            <div>
+              <ProgressSummary progress={progress} settings={settings} />
+            </div>
+
+            {/* Link to Free Progress */}
+            {freeLogCount > 0 && (
+              <button
+                onClick={() => navigate('/progress/free')}
+                className="w-full mb-8 px-4 py-3 bg-violet-400/5 border border-violet-400/20 rounded-lg hover:border-violet-400/40 transition-colors flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-violet-400 text-sm font-medium">{t('progress.freeSessionProgress')}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {t('progress.sessionCount', { count: freeLogCount })}
+                  </span>
+                </div>
+                <svg className="size-4 text-violet-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="6,3 11,8 6,13" /></svg>
+              </button>
+            )}
+
+            {/* Batallas (#398): el resultado de una batalla es progreso como cualquier
+                otro; hasta ahora solo se veía una vez y desaparecía. */}
+            <BattleHistory userId={userId || null} />
+
+            {/* Recent Sessions */}
+            <div className="mb-8">
+              <div className="text-[10px] text-muted-foreground tracking-[3px] mb-3 uppercase">{t('progress.recentSessions')}</div>
+              <div className="flex flex-col gap-1.5">
+                {allLogs.slice(0, 15).map((log, i) => {
+                  const phaseColor = log.phase ? PHASE_COLORS[log.phase] : null
+                  return (
+                    <button
+                      key={`${log.date}-${log.workoutKey}-${i}`}
+                      onClick={() => navigate(`/session/${log.date}/${log.workoutKey}`)}
+                      className="w-full text-left px-4 py-3 bg-card border border-border rounded-lg hover:border-lime/30 transition-colors flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="text-xs text-muted-foreground w-16 shrink-0">{relativeDate(log.date)}</div>
+                        <div className="min-w-0">
+                          <div className={cn('text-sm font-medium truncate', log.isFree ? 'text-violet-400' : phaseColor?.text)}>{log.title}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {log.totalSets > 0
+                              ? t('common.sets', { count: log.totalSets })
+                              : log.isFree && log.exerciseCount > 0
+                                ? t('progress.exerciseCount', { count: log.exerciseCount })
+                                : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {log.note && (
+                          <div className="text-[11px] text-muted-foreground italic truncate max-w-[120px] hidden sm:block">"{log.note}"</div>
+                        )}
+                        {log.totalSets > 0 && (
+                          <div className="flex gap-px">
+                            {Array.from({ length: Math.min(Math.ceil(log.totalSets / 5), 5) }).map((_, j) => (
+                              <div
+                                key={j}
+                                className={cn(
+                                  'w-1 h-3 rounded-full',
+                                  log.isFree ? 'bg-violet-400/60' : phaseColor ? phaseColor.bg.replace('/10', '/40') : 'bg-lime/40'
+                                )}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <svg className="size-4 text-muted-foreground" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="6,3 11,8 6,13" /></svg>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Export */}
+            <ExportData progress={progress} weights={weights} />
+          </TabsContent>
+
+          {/* ── Tab 2: Estadísticas ── */}
+          <TabsContent value="estadisticas">
+            <TrainingStatsPanel />
+          </TabsContent>
+
+          {/* ── Tab 3: Gráficas ── */}
+          <TabsContent value="graficas">
+            {Object.keys(exerciseLogs).length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="font-bebas text-2xl mb-2">{t('progress.noChartsData')}</div>
+                <div className="text-sm mb-4">{t('progress.noChartsDataDesc')}</div>
+                <button
+                  onClick={() => navigate('/')}
+                  className="text-sm text-lime hover:underline"
+                >
+                  {t('progress.goTrain')}
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Headline: Weekly Volume + Muscle Distribution */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 [&>*]:mb-0">
+                  <VolumeLoadChart progress={progress} />
+                  <MuscleBarsChart
+                    groups={fourWeekStats.muscles.groups}
+                    unassignedSets={fourWeekStats.muscles.unassignedSets}
+                  />
+                </div>
+
+                {/* Weight Progression (lastre) */}
+                <WeightProgressionChart exerciseLogs={exerciseLogs} exerciseNames={exerciseNames} />
+
+                {/* 1RM Calculator */}
+                <OneRepMaxCalculator exerciseLogs={exerciseLogs} exerciseNames={exerciseNames} bodyweightKg={
+                  weights.length > 0
+                    ? [...weights].sort((a, b) => b.date.localeCompare(a.date))[0].weight_kg
+                    : undefined
+                } />
+
+                {/* Exercise Charts with filter */}
+                <ChartsExerciseList exerciseLogs={exerciseLogs} exerciseNames={exerciseNames} t={t} />
+              </>
+            )}
+          </TabsContent>
+
+          {/* ── Tab 4: Cuerpo ── */}
+          <TabsContent value="cuerpo">
+            {/* Phase Photo Timeline */}
+            {userId && (
+              <PhasePhotoTimeline
+                currentPhase={currentPhase}
+                getPhotosByPhase={getPhotosByPhase}
+                uploadPhotos={uploadPhotos}
+              />
+            )}
+
+            {/* Weight Tracker */}
+            <div className="mb-8">
+              <WeightTracker userId={userId || null} />
+            </div>
+
+            {/* Body Measurements */}
+            <BodyMeasurementsTracker userId={userId || null} />
+
+            {/* Body Fat (Navy method) */}
+            <BodyFatPanel userId={userId || null} />
+
+            {/* Body Photos */}
+            <div className="mb-8">
+              <BodyPhotosTimeline userId={userId || null} />
+            </div>
+
+            {/* Photo Comparator */}
+            <PhotoComparator photos={photos} />
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
+  )
+}

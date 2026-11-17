@@ -1,0 +1,506 @@
+# Registro de cambios — Calistenia (móvil)
+
+Aquí se documentan todos los cambios relevantes de la app móvil de Calistenia.
+El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/) y el proyecto sigue el [Versionado Semántico](https://semver.org/lang/es/).
+
+> Generado a partir de notas de versión curadas con ayuda de IA — no editar a mano. Fuente: `packages/core/data/changelog.mobile.json` · regenera con `pnpm changelog:md`. La versión en inglés está en [`CHANGELOG.md`](./CHANGELOG.md).
+
+## [Sin publicar]
+
+_Nada por ahora._
+
+## [1.14.2] - 2026-10-16
+
+_El día de la app ya cambia a medianoche de tu hora, estés donde estés, y durante el entreno puedes ver de un vistazo los ejercicios que te faltan._
+
+### Añadido
+
+- **Ejercicios que faltan** — Toca el contador de la cabecera durante el entreno para ver los hechos, el actual y los que faltan, y salta a cualquiera.
+
+### Corregido
+
+- **El día cambia a tu medianoche** — «Hoy» sigue la hora de tu móvil: ya no pasa al día siguiente antes de tiempo si tu cuenta tenía guardada otra zona horaria.
+
+## [1.14.1] - 2026-10-09
+
+_Al terminar un entreno, el inicio lo marca como hecho al momento, el aviso de récord ya no vibra sin parar, y llega el registro de ayunos en Nutrición._
+
+### Añadido
+
+- **Ayunos en Nutrición** — Registra ayunos de 12 a 48 h o con tu propio objetivo, con cronómetro, objetivo semanal e historial editable.
+- **Batallas en la web** — La web estrena batallas, elegir día en Hoy y «Hecho hoy» con tus minutos y series, como en el móvil.
+
+### Corregido
+
+- **El inicio, al día tras entrenar** — Al volver de un entreno, el día ya sale como hecho y tu programa no desaparece, aunque entrenes de noche o falle la red.
+- **Aviso de récord sin vibración infinita** — Al batir un récord el móvil vibra una sola vez y el aviso se cierra solo.
+
+## [1.14.0] - 2026-10-02
+
+_Un inicio nuevo que te dice qué hacer hoy, pestaña Comunidad, racha semanal, logros, retos y batallas con tus propios días, y la app completa en inglés._
+
+### Añadido
+
+- **Inicio «qué hago hoy»** — El inicio te muestra tu entreno de hoy, tu semana y sugerencias «Para ti». Más simple hasta tu 3.er entreno.
+- **5 pestañas y Perfil desde el avatar** — Nueva navegación: Inicio, Entrenar, Progreso, Comunidad y más; tu Perfil se abre desde el avatar.
+- **Pestaña Comunidad** — Actividad, retos, batallas y ranking semanal en un solo sitio, con sugerencias de gente activa a la que seguir.
+- **Racha semanal y día perdido** — La racha cuenta por semanas con tu objetivo real, y si pierdes un día te lo decimos sin dramas.
+- **Logros, retos y batallas** — Hitos tempranos y pantalla de logros, el reto «Tu primera dominada» y batallas con un día de programa o tu propia batalla.
+- **App en inglés** — Ejercicios, repeticiones, macros, avisos y primer entreno traducidos; los avisos llegan en tu idioma.
+- **Más avisos que te acompañan** — Recuperación a los 7 y 14 días, «nuevo comienzo» los lunes y fin del descanso con la pantalla apagada.
+
+## [1.13.2] - 2026-09-13
+
+_La notificación del entreno ahora tiene botón para detenerla, y los programas enseñan cada día por dentro y progresan semana a semana._
+
+### Añadido
+
+- **Detener la notificación del entreno** — La notificación del entrenamiento en curso tiene un botón DETENER y muestra tu progreso de series también durante el descanso. El entreno sigue en la app.
+- **Cada día del programa, por dentro** — En la ficha de un programa puedes abrir cada día y ver sus ejercicios antes de empezarlo.
+- **Progresión semana a semana** — Los programas suben la dificultad dentro de cada fase y aligeran la última semana para que descanses.
+
+## [1.13.1] - 2026-09-08
+
+_Llega también todo lo de la versión anterior: tu primer entreno nada más entrar, recordatorios a tu hora y las notificaciones arregladas. Y como novedad, tus gráficas dejan de duplicar ejercicios._
+
+### Añadido
+
+- **Cuéntanos cómo llegaste** — En la pantalla de bienvenida puedes decir por dónde conociste la app. Es un toque y se puede saltar.
+
+### Corregido
+
+- **Un ejercicio, una sola línea** — En las gráficas y en tus estadísticas un mismo ejercicio podía salir dos veces según cómo se hubiera guardado la serie. Ahora se agrupan por el ejercicio real.
+- **Catálogo sin huecos** — Algunos ejercicios de los programas no tenían ficha en el catálogo y aparecían con su nombre interno. Rellenados.
+
+## [1.13.0] - 2026-09-03
+
+_El onboarding termina con tu primer entreno corto y un recordatorio a tu hora. Además: las notificaciones de seguidores, reacciones y comentarios vuelven a llegar, y los programas se ven en español y con sus cronómetros._
+
+### Añadido
+
+- **Tu primer entreno, nada más entrar** — Al terminar el onboarding arrancas una sesión corta de 4 ejercicios en vez de caer en la pantalla de inicio. Al completarla, la app te pregunta si quieres recibir notificaciones.
+- **Recordatorio desde el primer día** — Eliges tus días y tu hora durante el onboarding y la app te avisa a esa hora. Si pasas 24 o 72 horas sin entrenar, recibes un aviso; al tocarlo se abre el entreno de hoy.
+
+### Corregido
+
+- **Las notificaciones vuelven a llegar** — Los avisos de nuevos seguidores, reacciones, comentarios, logros y racha no llegaban al móvil. Arreglado en el servidor.
+- **Programas en español y con cronómetros** — Algunos ejercicios salían en inglés o con guiones bajos, los ejercicios por tiempo no mostraban su cronómetro y al copiar un programa el nombre quedaba roto. Todo corregido.
+
+## [1.12.3] - 2026-08-31
+
+_Health Connect ahora solo lee sueño, peso y grasa corporal. Además: el historial de cardio vuelve a verse, los programas oficiales traen sus instrucciones y nutrición ya no pregunta dos veces._
+
+### Corregido
+
+- **Menos datos de salud** — La app deja de leer pasos y frecuencia cardíaca de Health Connect: solo pide sueño, peso y grasa corporal, todo de solo lectura. La FC de tus entrenos antiguos se conserva.
+- **Historial de cardio** — El historial salía en blanco y la lista ocupaba toda la pantalla de Cardio. Arreglado.
+- **Programas con instrucciones** — Los 15 programas oficiales se revisaron a fondo: ejercicios, dosis e instrucciones que iban vacías ahora están completas.
+- **Nutrición sin repetir preguntas** — Al configurar tus objetivos de nutrición, lo que ya contaste en el onboarding aparece pre-rellenado.
+
+## [1.12.2] - 2026-08-27
+
+_Arreglo urgente: la 1.12.1 no arrancaba en Android. Incluye todo lo de la 1.12.1 (Health Connect con menos datos, notificación del entreno y Android 16)._
+
+### Corregido
+
+- **La app vuelve a arrancar** — Una actualización de la librería de fechas dejaba la fecha de hoy inválida en Android y el cálculo de la racha tumbaba la app al abrirla. Se fija la versión buena y la racha ya no puede romper el arranque.
+
+## [1.12.1] - 2026-08-27
+
+_Actualización de cumplimiento con Google Play: menos datos de salud, la notificación del entreno con el tipo de servicio correcto y soporte de Android 16._
+
+### Corregido
+
+- **Health Connect pide solo lo que muestra** — La app ya no lee calorías activas ni frecuencia cardíaca en reposo. Quedan pasos, frecuencia cardíaca de tus entrenos, sueño, peso y grasa corporal. Si ya estabas conectado, vuelve a conectar desde Reloj y salud para que el diálogo refleje los 5 tipos.
+- **Notificación del entreno y Android 16** — El cronómetro del entreno en curso corre ahora como servicio de salud, el tipo que Android reserva para apps de ejercicio, y la app apunta a Android 16.
+
+## [1.12.0] - 2026-08-26
+
+_La versión de los programas de entrenamiento: los creas y los editas de principio a fin, los compartes o los remezclas con crédito al autor, y la app te dice en qué semana vas y cuántas repeticiones tocan hoy._
+
+### Añadido
+
+- **Crea y edita programas completos desde el móvil** — El editor cubre el programa entero: fases, días, ejercicios y sus campos de catálogo, con validación en los pasos 3 y 4 para que no publiques un programa a medias. Puedes copiar un día o una fase entera, subir la portada y una imagen o vídeo por ejercicio, y desde la ficha editar, duplicar, abandonar o borrar el programa.
+- **Progresión automática: la app te dice cuánto toca hoy** — Cada ejercicio del programa mira lo que hiciste la última vez y te sugiere las repeticiones o los segundos de hoy. Cuando te quedas corto con una variante, te propone la siguiente para seguir subiendo sin tener que llevar la cuenta tú.
+- **Sabes en qué semana vas y en qué fase estás** — El programa muestra «semana X de Y» y cambia de fase solo según avanzas, sin que tengas que tocar ningún ajuste. El progreso se calcula de lo que realmente has entrenado.
+- **Comparte tus programas y remezcla los de otros** — Cada programa elige si es privado, accesible con enlace o público, y el enlace abre una página que se ve sin cuenta. Si partes del programa de alguien, la copia lleva el crédito «basado en X de @autor» y cada programa enseña cuánta gente lo sigue.
+- **Estadísticas de entrenamiento** — Una vista nueva con los músculos que más trabajas, tus ejercicios más frecuentes, tus récords personales y la tendencia de las últimas semanas.
+
+### Corregido
+
+- **Los días de circuito por fin funcionan** — Un día de tipo circuito arranca un circuito de verdad y, al terminarlo, marca el día como hecho y cuenta para el hito del programa — antes se quedaba bloqueado para siempre. Además, si el autor borra un programa al que estabas inscrito, ahora te avisamos en vez de dejarte con una inscripción muerta.
+
+## [1.11.1] - 2026-08-23
+
+_El historial de cardio estrena filtros por tipo, abre el detalle desde la propia fila y trae buscador de competencias. Además, la app ahora solo pide a Health Connect los datos que de verdad usa._
+
+### Añadido
+
+- **Historial de cardio con filtros y detalle directo** — Puedes filtrar el historial por tipo de sesión y abrir el detalle tocando la fila, sin pasos intermedios. Se añade además un buscador para encontrar competencias.
+
+### Corregido
+
+- **Health Connect pide menos datos tuyos** — La app pedía doce tipos de datos de salud y varios no se usaban para nada. Ahora solo pide siete, todos con una pantalla que te los enseña: pasos, calorías activas, frecuencia cardíaca, FC en reposo, sueño, peso y grasa corporal. Como contrapartida, desaparecen las métricas de VFC y VO₂ máx de «Reloj y salud». Si ya tenías el reloj conectado, revoca y vuelve a conceder los permisos en Health Connect para que se aplique el recorte.
+
+## [1.11.0] - 2026-08-23
+
+_El muro cuenta ahora todo lo que haces —sesiones libres, cardio, circuitos, retos, carreras y batallas—, el perfil estrena carné de atleta con tus cifras y tus marcas, y puedes poner tu cuenta en privado y aprobar quién te sigue._
+
+### Añadido
+
+- **El muro cuenta toda tu actividad** — Hasta ahora el muro solo enseñaba entrenos de programa, y las sesiones libres salían sin título. Ahora aparecen seis tipos de actividad: sesión de programa, sesión libre, cardio, circuito, reto, carrera y batalla. De paso, al bajar por el muro ya no se repiten publicaciones.
+- **Perfil con carné de atleta** — El perfil empieza por lo tuyo: nivel, semana del programa, tus cifras y tus skills. Los ajustes bajan al final, en una lista con una fila por tema que se despliega ahí mismo para editar sin cambiar de pantalla.
+- **Cuentas privadas con aprobación** — Activa «Cuenta privada» y quien quiera seguirte tendrá que solicitarlo: apruebas o rechazas desde notificaciones. El botón pasa a SOLICITAR / SOLICITADO, los perfiles privados muestran un candado en vez de ceros, y en los rankings de retos las cuentas privadas se ocultan a los demás sin descuadrar el número de participantes.
+
+### Corregido
+
+- **Compartir una sesión y verla entera** — El enlace para compartir una sesión le enseñaba a quien lo recibía su propio progreso, no el tuyo: arreglado. Y el detalle de una sesión sin series ya lista los ejercicios cronometrados en vez de decir solo «sin series registradas».
+- **El ranking deja de recargarse solo** — La pantalla de ranking se recargaba una y otra vez en segundo plano, gastando datos y batería. Ahora carga una vez, y las estadísticas de uso reflejan lo que de verdad haces.
+
+## [1.10.2] - 2026-08-22
+
+_Los programas oficiales vuelven a tener sus días de entrenamiento: la semana ya no aparece como solo descanso. Además, mejoras internas de estabilidad._
+
+### Corregido
+
+- **Los programas vuelven a tener semana** — Doce de los programas oficiales se mostraban con la semana vacía (solo sábado y domingo de descanso) y no había nada que entrenar. Ya tienen sus días de lunes a sábado con su tipo de entreno, y si alguno quedara por corregir, la app lo arregla sola al cargarlo.
+
+## [1.10.1] - 2026-08-21
+
+_Widgets en la pantalla de inicio para la racha, las comidas, el agua y tu próxima sesión; cuentas privadas con aprobación de seguidores; resultados de batalla con revancha y tarjeta para compartir; y un buen puñado de arreglos en cardio y en el guardado sin conexión._
+
+### Añadido
+
+- **Widgets en la pantalla de inicio** — Añade a tu pantalla de inicio la racha (también en formato 2x2, ahora con la racha real), la racha de comidas, el agua que llevas y tu próxima sesión. El widget de hoy muestra más información de un vistazo.
+- **Cuentas privadas** — Puedes hacer tu cuenta privada: quien quiera seguirte tendrá que pedírtelo y tú apruebas o rechazas. El servidor es quien decide qué se muestra, así que tus entrenos no salen en el muro ni en los rankings de quien no apruebes.
+- **Batallas: resultados, revancha y tarjeta** — Al acabar una batalla ves un resumen con el puesto de cada uno, puedes pedir revancha con un toque y compartir la tarjeta del resultado. Los empates se muestran como tal en el marcador, la espera y el historial, y el trabajo por tiempo aparece en el marcador.
+- **Retos: Push-up Builder y detalle renovado** — Nuevo reto listo para unirse, Push-up Builder, con puntuación acumulada. El detalle del reto tiene ahora dos vistas, meta y ranking, y los retos caducados se cierran solos en el servidor en vez de quedarse abiertos.
+- **Foto de perfil desde la app** — Cambia tu foto de perfil directamente desde el móvil, sin pasar por la web.
+
+### Corregido
+
+- **Guardado sin conexión más fiable** — Las series, las sesiones y los circuitos que no pueden guardarse por falta de cobertura se encolan y se reintentan solos cuando vuelve la conexión.
+- **Cardio: historial y sesiones accidentales** — El historial de cardio y otras listas podían aparecer vacías al entrar: arreglado. Si paras una sesión de cardio a los pocos segundos se descarta en vez de guardarse como un entreno de 0 metros, y los textos en inglés que se colaban en cardio y carreras están traducidos.
+- **Pequeños arreglos** — El texto sobre el color lima se lee bien en modo claro, los chevrones plegables giran como deben, las notificaciones push siguen llegando al cambiar de cuenta en el mismo móvil y guardar un programa ya no borra y recrea sus días.
+
+## [1.9.0] - 2026-08-14
+
+_Programas de comunidad con hitos semanales para seguir un plan de verdad, estadísticas de perfil que por fin cuentan todos tus entrenos, y las batallas con la misma pantalla de entreno que una sesión normal._
+
+### Añadido
+
+- **Programas de comunidad** — Apúntate a «30 días de calistenia» y sigue un plan con hitos semanales. Tu semana 1 empieza el día en que te apuntas, no hay que esperar a ningún lunes, y el progreso se calcula solo a partir de lo que entrenas: si editas o borras una sesión, el hito se corrige solo. Puedes dejarlo y volver sin perder por dónde ibas.
+- **Batallas con la pantalla de entreno de verdad** — Las batallas de circuito ya usan el mismo descanso y el mismo temporizador que una sesión normal, con sus avisos y sus vibraciones, en vez de una pantalla aparte a medias. Además, a quien has bloqueado ya no puede entrar en tu batalla ni ver el marcador en vivo.
+- **Tu recorrido en la tarjeta de resultados** — Al terminar una carrera, la tarjeta de resultados dibuja el recorrido que hiciste. Y si le das a guardar antes de que la ruta haya cargado, ya no se guarda el entreno sin ella.
+- **Crear y seguir retos, más simple** — El selector de métricas enseña las 4 de siempre y esconde el resto tras «Más métricas», así que crear un reto ya no es una pared de opciones. Las fechas del reto se ven como fechas y no como horas sueltas, el estado vacío ya no te saca al navegador, y los retos express funcionan de punta a punta.
+- **Un poco más de privacidad** — El recorrido GPS de tus carreras pasa a ser solo tuyo: el resto ve tu posición y tu resultado, pero no por dónde has ido. Y los datos privados de tu cuenta dejan de viajar a otras personas cuando aparecen tu nombre y tu foto en un muro o un ranking.
+- **Referidos: estado y recompensa a la vista** — Ahora puedes ver a quién has invitado, en qué estado está cada invitación y qué recompensa te toca, tanto en la app como en la web.
+
+### Corregido
+
+- **Tus estadísticas vuelven a contar** — Tu perfil y la Clasificación enseñaban 0 sesiones y 0 racha si entrenabas con sesiones de fuerza, aunque el calendario de esa misma pantalla sí tuviera datos. Ahora los tres tipos de sesión —fuerza, circuito y cardio— suman en el total y en la racha.
+
+## [1.8.0] - 2026-08-12
+
+_Batallas de circuito en tiempo real contra tus amigos, y un repaso a fondo de la privacidad: tus datos de salud dejan de ser visibles para el resto._
+
+### Añadido
+
+- **Batallas de circuito** — Reta a tus amigos a un circuito y competid a la vez, viendo en directo por dónde va cada uno. Con barra flotante mientras dura, aviso cuando alguien se une o cuando empieza, descanso entre ejercicios y un historial con la comparación cara a cara en Progreso.
+- **Tus datos de salud, solo tuyos** — La frecuencia cardiaca y las calorías que mide tu reloj, tus objetivos de agua y entrenamiento semanal y tus registros de comida y peso ya no son visibles para otras personas. El muro y el ranking siguen igual: solo se comparte lo que se ve en pantalla.
+- **Bloquear ahora bloquea de verdad** — Al bloquear a alguien, esa persona deja de ver tu perfil, tus entrenamientos y tu ubicación en una carrera, y deja de llegarte cualquier notificación suya. Antes solo se le impedía interactuar.
+- **Retos más fáciles de empezar** — Retos preparados para empezar de cero con un toque, puntuación acumulativa que suma todo lo que haces durante el reto, y un reto destacado en la pantalla de inicio.
+- **Sesiones libres** — Entrena sin seguir un programa: monta la sesión sobre la marcha y queda registrada igual que el resto, en tu historial y en tu calendario.
+
+### Corregido
+
+- **El buscador de amigos ya funciona** — Buscar a alguien por su nombre en la app no devolvía nada nunca, por un error de la propia búsqueda. Ya encuentra.
+
+## [1.7.1] - 2026-08-07
+
+_Arregla la 1.7.0: la app se veía completamente descolocada, sin estilos ni fuentes. Ya se muestra como debe._
+
+### Corregido
+
+- **La app vuelve a verse bien** — Si al actualizar a la 1.7.0 viste la app descolocada, con el texto pegado al borde y sin fuentes, ya está resuelto. No tienes que hacer nada: tus datos y tu sesión siguen intactos.
+
+## [1.7.0] - 2026-08-05
+
+_Edita la porción de cada alimento y las macros se recalculan solas, sugerencia IA más discreta, baja de cuenta desde la app y más privacidad en tus rutas de cardio._
+
+### Añadido
+
+- **Porción editable** — Ajusta la cantidad de cada alimento directamente en su card y las calorías y macros se recalculan al instante.
+- **Sugerencia IA plegable** — La sugerencia del coach al registrar una comida ahora aparece plegada: ábrela solo cuando te interese.
+- **Baja de cuenta** — Elimina tu cuenta y todos tus datos directamente desde la app, sin pasos externos.
+
+### Corregido
+
+- **Aviso de reto terminado** — La notificación de reto terminado ahora llega en el momento correcto, cuando el reto acaba de verdad.
+- **Rutas de cardio privadas** — Tus rutas GPS de cardio ahora solo son visibles para ti: nadie más puede consultarlas.
+- **Análisis de comida más limpio** — Los textos del análisis de fotos de comida ya no muestran citas ni URLs extrañas de la búsqueda web.
+
+## [1.6.0] - 2026-07-20
+
+_Crea tus propios programas desde el móvil, registra tu sueño con resumen IA, cambia tu objetivo nutricional cuando quieras y celebra tus logros como se merece._
+
+### Añadido
+
+- **Editor de programas** — Crea y edita tus propios programas desde el móvil: fases, días (fuerza, cardio o circuito) y ejercicios del catálogo, en un asistente de 4 pasos.
+- **Sueño con resumen IA** — Registra tu sueño directamente en la app y recibe un análisis IA de tu patrón: consistencia, cafeína, pantallas y más.
+- **Objetivo editable** — Cambia tu objetivo nutricional cuando quieras con vista previa de calorías y macros, y edita tus datos corporales desde el perfil.
+- **Celebración de logros** — Los badges de nutrición ahora se celebran con una pantalla propia — y si ganas varios a la vez, los ves en secuencia.
+- **Denunciar contenido** — Denuncia usuarios o comentarios inapropiados desde el perfil o los comentarios; nuestro equipo los revisa.
+
+### Corregido
+
+- **Onboarding más robusto** — El registro ya no puede perder tu perfil en silencio: si algo falla al guardar, te avisa y puedes reintentar.
+
+## [1.5.0] - 2026-07-18
+
+_Primeros pasos guiados en el Home, un directorio «Descubre» con las 21 funciones de la app, y pantallas vacías que ahora enseñan a usar cada una._
+
+### Añadido
+
+- **Primeros pasos** — Nuevo checklist en el Home con 6 pasos de activación, barra de progreso y un acceso directo a cada uno.
+- **Descubre** — Nueva sección en tu perfil con las 21 funciones de la app organizadas por categoría, cada una a un toque de distancia.
+- **Pantallas vacías que enseñan** — Historial, biblioteca, calendario y otras pantallas ahora explican qué hacer cuando están vacías, con un botón directo a la acción.
+
+### Corregido
+
+- **Crash al deslizar en la sesión** — Arreglado un cierre inesperado de la app al deslizar entre ejercicios durante el entreno.
+
+## [1.4.0] - 2026-07-17
+
+_Onboarding más inteligente: define tu objetivo principal, mide tu ratio cintura/altura y elige tu idioma. Además, retoma tu sesión de fuerza en cualquier dispositivo._
+
+### Añadido
+
+- **Objetivo principal** — El onboarding ahora te pide tu objetivo principal de forma estructurada y adapta las recomendaciones a él.
+- **Ratio cintura/altura** — Nueva medida de cintura en el onboarding para calcular tu ratio cintura/altura (WHtR), un indicador de salud más fiable que el IMC solo.
+- **Idioma ES/EN** — Elige entre español e inglés directamente desde el onboarding, en web y en la app.
+- **Reanuda tu sesión donde sea** — Tu sesión de fuerza en curso se sincroniza con el servidor: empieza en el móvil y continúa en la web, o al revés.
+
+## [1.3.2] - 2026-07-14
+
+_Toca el nombre de un amigo en el feed para abrir su perfil._
+
+### Añadido
+
+- **Perfil desde el feed** — Tocar el autor de una actividad abre su perfil. También avisamos si bloquear/desbloquear falla.
+
+## [1.3.1] - 2026-07-14
+
+_Bloquear usuarios ahora es más claro y rápido desde el perfil._
+
+### Añadido
+
+- **Bloqueo rediseñado** — Nuevo menú ⋯ en el perfil para bloquear, y un aviso claro con botón para desbloquear cuando un usuario está bloqueado.
+
+## [1.3.0] - 2026-07-14
+
+_Ahora puedes bloquear usuarios: su actividad desaparece para ti en toda la app._
+
+### Añadido
+
+- **Bloquear usuarios** — Bloquea a cualquier usuario desde su perfil: se dejan de seguir mutuamente y su actividad desaparece del feed, comentarios, reacciones, rankings y retos.
+- **Gestión de bloqueados** — Nueva pantalla en tu perfil para ver y desbloquear usuarios cuando quieras.
+- **Sin ruido** — Un usuario bloqueado no puede comentar tu actividad, seguirte ni enviarte notificaciones.
+
+## [1.2.1] - 2026-07-13
+
+_Mejoras y correcciones de esta versión._
+
+### Añadido
+
+- **web** — Página de eliminación de cuenta para Google Play
+- **web** — Página de política de privacidad para Google Play
+- **mcp** — Widgets visuales para despensa y recetas (8 nuevos, 19 total) (#202)
+- **deps** — Tailwindcss+vitest bumps in apps/web (#146 parte 3a) — Vite 8 reverted, blocked upstream (#200)
+
+## [1.2.0] - 2026-07-10
+
+_Carreras por tiempo con ranking real y countdown en rojo, y tu sesión offline ya no te desloguea ni pierde datos._
+
+### Añadido
+
+- **Ranking real en carreras por tiempo** — En carreras a tiempo fijo ahora se ordena por distancia recorrida, no por quién sincronizó antes. El ganador se marca como "Recorrió más".
+- **Countdown final en rojo** — Los últimos 10 segundos de carrera se ven en rojo con vibración y sonido en cada segundo, para que sepas exactamente cuándo apretar.
+
+### Corregido
+
+- **Sin conexión ya no te desloguea** — Abrir la app sin internet mantenía tu sesión, pero por un bug te deslogueaba y podía perder entrenamientos guardados sin conexión. Arreglado: tu sesión y tus datos offline ahora sobreviven arranques sin red.
+- **El cero ahora cuenta** — Poner un macro en 0g o un descanso de circuito en 0s se guardaba como valor por defecto en vez de respetar el cero que elegiste. Ya se respeta.
+
+### Seguridad
+
+- **Dependencias actualizadas** — Actualizamos el SDK de PocketBase y parcheamos una vulnerabilidad de bajo impacto en una librería interna.
+
+## [1.1.0] - 2026-07-03
+
+_Tus insights semanales evolucionan: historial, tendencias, una sugerencia accionable y un resumen automático cada lunes._
+
+### Añadido
+
+- **Tus semanas: historial de insights** — Una nueva pantalla reúne tus resúmenes semanales anteriores para ver patrones a lo largo del tiempo. Fíltralos por semana o mes.
+- **Sugerencia accionable** — Cuando encaja, tu resumen propone una acción concreta y te lleva a ella de un toque (recordatorios, nutrición o una sesión libre).
+- **Tendencia de la semana** — Cada resumen muestra si vas mejor, igual o peor que la semana anterior con una señal ↑ / → / ↓.
+- **Resumen automático cada lunes** — Ya no hace falta generarlo a mano: cada lunes por la mañana preparamos tu resumen y te avisamos con una notificación.
+
+## [1.0.9] - 2026-07-03
+
+_Insights que cruzan tus métricas de la semana, y el catálogo crece a 1,578 ejercicios con filtros y retos._
+
+### Añadido
+
+- **Insights de tu semana** — La app cruza tu sueño, entrenos, nutrición, agua y peso para mostrarte patrones de tu semana con una sugerencia accionable. Tócalo en "Generar resumen" desde Inicio.
+- **Catálogo ampliado a 1,578 ejercicios** — El catálogo pasa de 307 a 1,578 ejercicios, con nombres e instrucciones en español (98% con descripción). Por ahora sin GIFs de terceros.
+- **Filtros de biblioteca en móvil** — Filtra la biblioteca por dificultad, equipo y grupo muscular — igual que en la web.
+- **Filtro "Sin equipo"** — Nuevo filtro para ver solo ejercicios de puro peso corporal (454 en el catálogo).
+- **Grupos musculares y variantes por nivel** — Chips de filtro por 15 grupos musculares canónicos, y una nueva sección "Variantes" en cada ejercicio agrupada por nivel — más fáciles, mismo nivel, más difíciles.
+- **Ejercicios relacionados** — Cada ejercicio ahora sugiere "Relacionados" — movimientos parecidos por músculos que no son variaciones del mismo ejercicio.
+- **Retos por ejercicio** — Crea un reto sobre cualquier ejercicio del catálogo (p. ej. "PR de dominadas en 30 días") desde la web; el leaderboard puntúa tu mejor set registrado.
+- **PRs con peso extra** — Los récords personales ahora estiman tu e1RM al registrar peso extra (lastre).
+- **Sesión libre IA sin gimnasio por defecto** — La sesión libre con IA excluye ejercicios de gimnasio salvo que actives incluirlos.
+
+### Corregido
+
+- **Traducciones corregidas** — 8 ejercicios (como Muscle up) ya no muestran su descripción en inglés con la app en español, y el chip de dificultad en el detalle del ejercicio ahora se traduce correctamente.
+
+## [1.0.7] - 2026-06-24
+
+_Cuando el análisis de una foto de comida falla, ahora ves el error real en vez de un fallo silencioso._
+
+### Corregido
+
+- **Errores de análisis de comida más claros** — Si el análisis de una foto de comida falla, la app te muestra el mensaje real del error para que sepas qué pasó. Además, los fallos se reportan automáticamente para corregirlos antes.
+
+## [1.0.6] - 2026-06-24
+
+_Elige el tema de la app —claro, oscuro o automático— y reabre las novedades cuando quieras para ver todas las versiones._
+
+### Añadido
+
+- **Tema claro y oscuro** — Cambia entre modo claro, oscuro o el del sistema desde tu perfil. Tu elección se recuerda al reabrir la app.
+- **Historial de novedades** — Abre las novedades cuando quieras desde tu perfil y revisa todas las versiones anteriores.
+
+## [1.0.5] - 2026-06-24
+
+_Circuitos y entrenos cronometrados, importa datos de tu reloj y comparte tu nutrición con estilo._
+
+### Añadido
+
+- **Circuitos en sesión libre** — Arma circuitos con rondas, descanso entre ejercicios y entre rondas — y entrénalos con un cronómetro a pantalla completa.
+- **Entrenos cronometrados** — Modo cronometrado: define el tiempo de trabajo y descanso de cada ejercicio y deja que la app te guíe.
+- **Importa datos de tu reloj** — Conecta Health Connect para traer pasos, sueño, frecuencia cardíaca, peso y más a tu calendario y nutrición.
+- **Comparte tu nutrición** — Nuevas tarjetas de nutrición para compartir tu día con las miniaturas, nombres y macros de cada comida.
+
+### Corregido
+
+- **Mapas de cardio al compartir** — Arreglado el mapa en blanco al compartir tus sesiones de cardio: la ruta vuelve a verse.
+
+## [1.0.4] - 2026-06-22
+
+_Calendario unificado, horario de comidas y un repaso completo de tus sesiones pasadas._
+
+### Añadido
+
+- **Calendario unificado** — Ve toda tu actividad — entrenos, cardio, comidas, sueño, agua y peso — en una sola vista mensual.
+- **Horario de comidas** — Registra cuándo comes y cuánto dura cada comida, con una puntuación diaria de calidad nutricional.
+- **Detalle de sesiones pasadas** — Toca cualquier entreno o cardio anterior para ver el desglose completo: series, reps, ruta y mapa.
+- **Menú de acceso rápido** — Un nuevo menú ☰ te lleva en un toque a sesiones libres, comunidad, carreras y recordatorios.
+- **Plantillas de sesión libre** — Guarda tus sesiones de IA y reutilízalas cuando quieras, sin volver a generarlas.
+- **Ejercicios más claros** — Los ejercicios ahora incluyen indicaciones de tempo y mejores demos para cuidar tu técnica.
+
+### Corregido
+
+- **Controles en pantalla bloqueada** — Tu entreno y cardio en vivo ahora se ven y se controlan desde la pantalla bloqueada (incl. Xiaomi/MIUI).
+
+### Cambiado
+
+- **App más fluida** — Repaso de rendimiento en varias pantallas para que todo vaya más ligero.
+
+## [1.0.3] - 2026-06-19
+
+_Notificaciones push y más actividad social._
+
+### Añadido
+
+- **Notificaciones push** — Recibe avisos cuando tus amigos logran rachas, terminan entrenos o te dan un toque.
+- **Actividad de amigos** — Las rachas, logros y entrenos de tus amigos ahora aparecen en tu feed y notificaciones.
+
+## [1.0.2] - 2026-06-17
+
+_Feed de actividad, tarjetas para compartir y un final de sesión con más chispa._
+
+### Añadido
+
+- **Feed de actividad** — Ve la actividad reciente de tus amigos y la tuya en el inicio, con búsqueda y filtros de programas.
+- **Final de sesión con chispa** — Confetti, frases dinámicas y animaciones de tiempos al terminar tu entreno.
+- **Tarjetas para compartir** — Comparte tu racha y el resumen de tu sesión como imagen.
+
+### Corregido
+
+- **Arreglo de inicio con Google** — Soluciona el cuelgue infinito al iniciar sesión con Google en Honor/MagicOS.
+
+## [1.0.1] - 2026-06-15
+
+_Comentarios renovados con push, recordatorios locales y mejor rendimiento._
+
+### Añadido
+
+- **Comentarios renovados** — Nueva interfaz de comentarios con teclado nativo y notificaciones push para comentarios y reacciones.
+- **Recordatorios locales** — Programa recordatorios de entreno directamente en tu teléfono.
+
+### Cambiado
+
+- **Mejor rendimiento de datos** — Carga y sincronización de datos más rápidas.
+
+## [1.0.0] - 2026-06-13
+
+_Primera versión de la app móvil: onboarding, programas, nutrición con IA y sesiones guiadas._
+
+### Añadido
+
+- **Primera versión móvil** — La app de Calistenia llega a Android con tu programa, sesiones y progreso.
+- **Onboarding inteligente** — Te emparejamos con los programas ideales según tu nivel y objetivos.
+- **Registro de comidas con IA** — Registra comidas describiéndolas en texto y deja que la IA calcule los macros.
+- **Sesiones guiadas** — Entrena con sesiones paso a paso que respetan tus articulaciones lesionadas.
+
+[unreleased]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.14.2...HEAD
+[1.14.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.14.1...mobile-v1.14.2
+[1.14.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.14.0...mobile-v1.14.1
+[1.14.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.13.2...mobile-v1.14.0
+[1.13.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.13.1...mobile-v1.13.2
+[1.13.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.13.0...mobile-v1.13.1
+[1.13.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.12.3...mobile-v1.13.0
+[1.12.3]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.12.2...mobile-v1.12.3
+[1.12.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.12.1...mobile-v1.12.2
+[1.12.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.12.0...mobile-v1.12.1
+[1.12.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.11.1...mobile-v1.12.0
+[1.11.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.11.0...mobile-v1.11.1
+[1.11.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.10.2...mobile-v1.11.0
+[1.10.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.10.1...mobile-v1.10.2
+[1.10.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.9.0...mobile-v1.10.1
+[1.9.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.8.0...mobile-v1.9.0
+[1.8.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.7.1...mobile-v1.8.0
+[1.7.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.7.0...mobile-v1.7.1
+[1.7.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.6.0...mobile-v1.7.0
+[1.6.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.5.0...mobile-v1.6.0
+[1.5.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.4.0...mobile-v1.5.0
+[1.4.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.3.2...mobile-v1.4.0
+[1.3.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.3.1...mobile-v1.3.2
+[1.3.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.3.0...mobile-v1.3.1
+[1.3.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.2.1...mobile-v1.3.0
+[1.2.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.2.0...mobile-v1.2.1
+[1.2.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.1.0...mobile-v1.2.0
+[1.1.0]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.9...mobile-v1.1.0
+[1.0.9]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.7...mobile-v1.0.9
+[1.0.7]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.6...mobile-v1.0.7
+[1.0.6]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.5...mobile-v1.0.6
+[1.0.5]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.4...mobile-v1.0.5
+[1.0.4]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.3...mobile-v1.0.4
+[1.0.3]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.2...mobile-v1.0.3
+[1.0.2]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.1...mobile-v1.0.2
+[1.0.1]: https://github.com/guillermoscript/calistenia-app/compare/mobile-v1.0.0...mobile-v1.0.1
+[1.0.0]: https://github.com/guillermoscript/calistenia-app/releases/tag/mobile-v1.0.0

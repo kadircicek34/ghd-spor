@@ -1,0 +1,689 @@
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { qk } from '@calistenia/core/lib/query-keys'
+import { useCatalogExerciseList } from '@calistenia/core/hooks/useExerciseCatalog'
+import { WORKOUTS } from '@calistenia/core/data/workouts'
+import { useTranslation } from 'react-i18next'
+import { getExerciseEquipment, EQUIPMENT_CATALOG, getEquipmentLabelKey } from '@calistenia/core/lib/equipment'
+import { MUSCLE_GROUPS, getMuscleGroupLabelKey, getMuscleGroups } from '@calistenia/core/lib/muscles'
+import { cn } from '../lib/utils'
+import { Badge } from '../components/ui/badge'
+import { useWorkout } from '../contexts/WorkoutContext'
+import { useWgerSearch } from '@calistenia/core/hooks/useWgerSearch'
+import { useFavorites } from '@calistenia/core/hooks/useFavorites'
+import WgerResultCard from '../components/WgerResultCard'
+import type { Priority, DifficultyLevel } from '@calistenia/core/types'
+import ExerciseThumbnail from '../components/ExerciseThumbnail'
+import { useLocalize } from '@calistenia/core/hooks/useLocalize'
+import { SearchIcon } from '../components/icons/nav-icons'
+import { CANONICAL_ANALYTICS_EVENTS, trackCanonicalEvent } from '@calistenia/core/lib/analytics'
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+type CategoryId = 'todos' | 'push' | 'pull' | 'legs' | 'core' | 'glutes_lower_back' | 'cardio' | 'full' | 'mobility' | 'skills' | 'yoga'
+
+interface CategoryDef {
+  id: CategoryId
+  label: string
+  color: string
+  bg: string
+}
+
+const CATEGORIES: CategoryDef[] = [
+  { id: 'todos',            label: 'Todos',     color: 'text-foreground',      bg: 'bg-muted' },
+  { id: 'push',             label: 'Push',      color: 'text-gold-400',        bg: 'bg-gold-500/10' },
+  { id: 'pull',             label: 'Pull',      color: 'text-sky-400',         bg: 'bg-sky-500/10' },
+  { id: 'legs',             label: 'Legs',      color: 'text-pink-400',        bg: 'bg-pink-500/10' },
+  { id: 'core',             label: 'Core',      color: 'text-amber-400',       bg: 'bg-amber-500/10' },
+  { id: 'glutes_lower_back',label: 'Lumbar',     color: 'text-red-400',         bg: 'bg-red-500/10' },
+  { id: 'cardio',           label: 'Cardio',    color: 'text-orange-400',      bg: 'bg-orange-500/10' },
+  { id: 'full',             label: 'Full',      color: 'text-yellow-400',      bg: 'bg-yellow-500/10' },
+  { id: 'mobility',         label: 'Movilidad', color: 'text-emerald-400',     bg: 'bg-emerald-500/10' },
+  { id: 'skills',           label: 'Skill',     color: 'text-violet-400',      bg: 'bg-violet-500/10' },
+  { id: 'yoga',             label: 'Yoga',      color: 'text-fuchsia-400',     bg: 'bg-fuchsia-500/10' },
+]
+
+const CATEGORY_COLORS: Record<string, { text: string; bg: string; border: string }> = {
+  push:             { text: 'text-gold-400',    bg: 'bg-gold-500/10',    border: 'border-gold-500/20' },
+  pull:             { text: 'text-sky-400',     bg: 'bg-sky-500/10',     border: 'border-sky-500/20' },
+  legs:             { text: 'text-pink-400',    bg: 'bg-pink-500/10',    border: 'border-pink-500/20' },
+  core:             { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20' },
+  glutes_lower_back:{ text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20' },
+  cardio:           { text: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20' },
+  full:             { text: 'text-yellow-400',  bg: 'bg-yellow-500/10',  border: 'border-yellow-500/20' },
+  mobility:         { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  skills:           { text: 'text-violet-400',  bg: 'bg-violet-500/10',  border: 'border-violet-500/20' },
+  yoga:             { text: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500/20' },
+  // Las claves de arriba son los ids de los botones de esta página. Desde el
+  // #609 `mapCatalogRecord()` emite la categoría ya normalizada al vocabulario
+  // del catálogo, así que estos tres alias son los que ve una tarjeta. (Los
+  // botones siguen buscando por su id, de ahí que convivan las dos formas.)
+  lumbar:           { text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20' },
+  movilidad:        { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  skill:            { text: 'text-violet-400',  bg: 'bg-violet-500/10',  border: 'border-violet-500/20' },
+}
+
+const PRIORITY_DOT: Record<Priority, string> = {
+  high: 'bg-red-500',
+  med:  'bg-amber-400',
+  low:  'bg-sky-500',
+}
+
+const DIFFICULTY_STYLE: Record<DifficultyLevel, { text: string; bg: string; border: string }> = {
+  beginner:     { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  intermediate: { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20' },
+  advanced:     { text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20' },
+}
+
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// ── Category placeholder icons ───────────────────────────────────────────────
+
+function CategoryIcon({ category }: { category: string }) {
+  const base = 'size-10 opacity-30'
+  const color = CATEGORY_COLORS[category]?.text || 'text-muted-foreground'
+
+  switch (category) {
+    case 'push':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 14l4-4 4 4" /><path d="M12 14l4-4 4 4" /><line x1="2" y1="18" x2="22" y2="18" />
+        </svg>
+      )
+    case 'pull':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="3" x2="12" y2="15" /><polyline points="8 11 12 15 16 11" /><line x1="4" y1="3" x2="20" y2="3" />
+        </svg>
+      )
+    case 'legs':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 4v6l-2 8h-1" /><path d="M14 4v6l2 8h1" /><circle cx="12" cy="3" r="1" />
+        </svg>
+      )
+    case 'core':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <ellipse cx="12" cy="12" rx="4" ry="6" /><line x1="12" y1="6" x2="12" y2="18" /><line x1="8" y1="10" x2="16" y2="10" /><line x1="8" y1="14" x2="16" y2="14" />
+        </svg>
+      )
+    case 'glutes_lower_back':
+    case 'lumbar':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3c0 0-3 4-3 9s3 9 3 9" /><path d="M12 3c0 0 3 4 3 9s-3 9-3 9" />
+        </svg>
+      )
+    case 'cardio':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12h4l3-9 4 18 3-9h4" />
+        </svg>
+      )
+    case 'skills':
+    case 'skill':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2l2.5 7H22l-6 4.5 2.5 7L12 16l-6.5 4.5 2.5-7L2 9h7.5z" />
+        </svg>
+      )
+    case 'mobility':
+    case 'movilidad':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="5" r="2" /><path d="M8 22l2-7 2 3 2-3 2 7" /><path d="M6 12c2-1 4-2 6-2s4 1 6 2" />
+        </svg>
+      )
+    case 'yoga':
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="4" r="2" /><path d="M12 6v4" /><path d="M8 20l4-10 4 10" /><path d="M6 14c2 0 4-2 6-2s4 2 6 2" />
+        </svg>
+      )
+    default: // full body
+      return (
+        <svg className={cn(base, color)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="4" r="2" /><path d="M12 6v5" /><path d="M8 8l4 3 4-3" /><path d="M10 11v5l-2 5" /><path d="M14 11v5l2 5" />
+        </svg>
+      )
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export default function ExerciseLibraryPage() {
+  const { t, i18n } = useTranslation()
+  const l = useLocalize()
+  const navigate = useNavigate()
+  // La lista sale de core (#474): el bundle fusionado con `exercises_catalog`,
+  // con la identidad canónica de cada ejercicio. Antes esta página leía PB a
+  // pelo y, sin PB, reconstruía a mano una lista parcial desde `WORKOUTS`.
+  const { exercises: catalogList, loading } = useCatalogExerciseList()
+  const queryClient = useQueryClient()
+  const exercises = useMemo(
+    () => [...catalogList].sort((a, b) => l(a.name).localeCompare(l(b.name))),
+    [catalogList, l],
+  )
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState<CategoryId>('todos')
+  const [activeMuscle, setActiveMuscle] = useState<string | null>(null)
+  const [activeEquipment, setActiveEquipment] = useState<string | null>(null)
+  const [activeDifficulty, setActiveDifficulty] = useState<DifficultyLevel | null>(null)
+  const [importedIds, setImportedIds] = useState<Set<number>>(new Set())
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+  const { wgerResults, wgerLoading, wgerError, searchWger: doWgerSearch, importExercise, importing, clearResults } = useWgerSearch()
+
+  // #636 §4: el listado no emitía nada, así que `exercise_viewed` no tenía
+  // denominador. Espeja el de la pantalla nativa.
+  useEffect(() => {
+    trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.exerciseCatalogViewed, {
+      surface: 'exercise_catalog', source: 'exercise_library',
+    })
+  }, [])
+
+  // Debounced search tracking
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const trackSearch = useCallback((term: string) => {
+    clearTimeout(searchTimerRef.current)
+    if (term.length >= 2) {
+      searchTimerRef.current = setTimeout(() => {
+        trackCanonicalEvent(CANONICAL_ANALYTICS_EVENTS.exerciseSearched, {
+          surface: 'exercise_catalog', source: 'exercise_library', query: term,
+        })
+      }, 1500)
+    }
+  }, [])
+  const { favoriteIds, toggleFavorite, isFavorite, count: favCount } = useFavorites()
+
+  // Collect exercise IDs from active program
+  const { state, actions } = useWorkout()
+  const programExerciseIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (!state.activeProgram) return ids
+    for (const phase of state.phases) {
+      for (const day of state.weekDays) {
+        const workout = actions.getWorkout(phase.id, day.id)
+        if (workout) workout.exercises.forEach(ex => ids.add(ex.id))
+      }
+    }
+    return ids
+  }, [state.activeProgram, state.phases, state.weekDays, actions])
+
+  // Filtered exercises
+  const filtered = useMemo(() => {
+    let result = exercises
+
+    // Favorites filter
+    if (showFavoritesOnly) {
+      result = result.filter(ex => favoriteIds.has(ex.id))
+    }
+
+    // Category filter — UI ids and catalog JSON ids drifted historically
+    // (mobility/movilidad, skills/skill, glutes_lower_back/lumbar), so each
+    // button matches its aliases too.
+    if (activeCategory !== 'todos') {
+      const CATEGORY_ALIASES: Record<string, string[]> = {
+        mobility: ['mobility', 'movilidad'],
+        skills: ['skills', 'skill'],
+        glutes_lower_back: ['glutes_lower_back', 'lumbar'],
+      }
+      const accepted = CATEGORY_ALIASES[activeCategory] ?? [activeCategory]
+      result = result.filter(ex => accepted.includes(ex.category))
+    }
+
+    // Muscle group filter (canonical taxonomy ids baked into the catalog)
+    if (activeMuscle) {
+      result = result.filter(ex => getMuscleGroups(ex).includes(activeMuscle))
+    }
+
+    // Difficulty filter
+    if (activeDifficulty) {
+      result = result.filter(ex => ex.difficulty === activeDifficulty)
+    }
+
+    // Equipment filter (explicit catalog field wins; keyword detection as fallback).
+    // "ninguno" means bodyweight-only: no other equipment involved at all.
+    if (activeEquipment) {
+      result = result.filter(ex => {
+        const equipmentIds = getExerciseEquipment({ name: l(ex.name), note: l(ex.note), equipment: ex.equipment })
+        return activeEquipment === 'ninguno'
+          ? equipmentIds.every(id => id === 'ninguno')
+          : equipmentIds.includes(activeEquipment)
+      })
+    }
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.toLowerCase().trim()
+      result = result.filter(ex =>
+        l(ex.name).toLowerCase().includes(q) ||
+        l(ex.muscles).toLowerCase().includes(q)
+      )
+    }
+
+    return result
+    // `l` en las deps: al cambiar de idioma el filtro de búsqueda tiene que
+    // recalcularse contra los nombres del idioma nuevo. (#484)
+  }, [exercises, showFavoritesOnly, favoriteIds, activeCategory, activeDifficulty, activeMuscle, activeEquipment, search, l])
+
+  // Incremental rendering — the catalog is ~1600 entries and the grid is not
+  // virtualized, so cap the DOM and grow on demand.
+  const PAGE_SIZE = 90
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [showFavoritesOnly, activeCategory, activeDifficulty, activeMuscle, activeEquipment, search])
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount])
+
+  const getCategoryStyle = (cat: string) =>
+    CATEGORY_COLORS[cat] || { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
+
+  const hasActiveFilters = showFavoritesOnly || activeCategory !== 'todos' || activeDifficulty !== null || activeMuscle !== null || activeEquipment !== null || search.trim() !== ''
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 md:py-12">
+
+      {/* ── Hero header ──────────────────────────────────────────────────── */}
+      <div className="mb-8">
+        <h1 className="font-bebas text-5xl md:text-7xl leading-none tracking-wide">{t('exerciseLibrary.title')}</h1>
+        <p className="text-sm text-muted-foreground mt-1 font-mono tracking-wide">
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              {t('common.loading')}
+            </span>
+          ) : t('exerciseLibrary.exerciseCount', { count: filtered.length })}
+        </p>
+      </div>
+
+      {/* ── Search ──────────────────────────────────────────────────────── */}
+      <div className="relative mb-6">
+        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); trackSearch(e.target.value) }}
+          placeholder={t('exerciseLibrary.searchPlaceholder')}
+          className="w-full h-12 pl-11 pr-4 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-gold-400/30 focus:ring-1 focus:ring-gold-400/20 transition-all text-sm"
+        />
+      </div>
+
+      {/* ── Filter bar ───────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[11px] font-mono tracking-widest text-muted-foreground uppercase">{t('exerciseLibrary.filters')}</span>
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setShowFavoritesOnly(false); setActiveCategory('todos'); setActiveDifficulty(null); setActiveMuscle(null); setActiveEquipment(null); setSearch('') }}
+              className="text-[11px] font-mono tracking-widest text-muted-foreground/60 hover:text-muted-foreground transition-colors uppercase"
+            >
+              {t('exerciseLibrary.clearAll')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Category pills (always visible) + Favorites toggle ──────────── */}
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-3 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+        <button
+          onClick={() => setShowFavoritesOnly(v => !v)}
+          className={cn(
+            'px-3.5 py-2.5 rounded-full text-[11px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 border uppercase flex items-center gap-1.5',
+            showFavoritesOnly
+              ? 'bg-amber-500/10 text-amber-400 border-amber-400/20'
+              : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+          )}
+        >
+          <svg className="size-3.5" viewBox="0 0 24 24" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          {favCount > 0 && favCount}
+        </button>
+        {CATEGORIES.map(cat => {
+          const isActive = activeCategory === cat.id
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={cn(
+                'px-4 py-2.5 rounded-full text-[11px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 border uppercase',
+                isActive
+                  ? cn(cat.bg, cat.color, 'border-current/20')
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+              )}
+            >
+              {t(`exerciseLibrary.category.${cat.id}`)}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── Difficulty pills ──────────────────────────────────────────── */}
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-3 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+        {(['beginner', 'intermediate', 'advanced'] as DifficultyLevel[]).map(level => {
+          const isActive = activeDifficulty === level
+          const style = DIFFICULTY_STYLE[level]
+          return (
+            <button
+              key={level}
+              onClick={() => setActiveDifficulty(isActive ? null : level)}
+              className={cn(
+                'px-4 py-2.5 rounded-full text-[11px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 border uppercase',
+                isActive
+                  ? cn(style.bg, style.text, style.border)
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+              )}
+            >
+              {t(`difficulty.${level}`)}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── More filters toggle ────────────────────────────────────────── */}
+      <button
+        onClick={() => setShowMoreFilters(v => !v)}
+        className={cn(
+          'flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase mb-3 transition-colors',
+          (activeMuscle || activeEquipment)
+            ? 'text-lime'
+            : 'text-muted-foreground/60 hover:text-muted-foreground'
+        )}
+      >
+        <span>{showMoreFilters ? '▾' : '▸'} {t('exerciseLibrary.equipmentAndMuscle')}</span>
+        {(activeMuscle || activeEquipment) && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-lime/10 text-lime border border-lime/20">
+            {[
+              activeEquipment && t(getEquipmentLabelKey(activeEquipment)),
+              activeMuscle && t(getMuscleGroupLabelKey(activeMuscle)),
+            ].filter(Boolean).join(' + ')}
+          </span>
+        )}
+      </button>
+
+      {/* ── Equipment + Muscle filters (collapsible) ───────────────────── */}
+      {showMoreFilters && (
+        <div className="mb-4 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          {/* Equipment */}
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            {EQUIPMENT_CATALOG.map(eq => {
+              const isActive = activeEquipment === eq.id
+              return (
+                <button
+                  key={eq.id}
+                  onClick={() => setActiveEquipment(isActive ? null : eq.id)}
+                  className={cn(
+                    'px-4 py-2.5 rounded-full text-[11px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 border uppercase',
+                    isActive
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-400/20'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                  )}
+                >
+                  {eq.icon} {t(`equipment.${eq.id}`)}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Muscle groups */}
+          <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            <button
+              onClick={() => setActiveMuscle(null)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 uppercase',
+                !activeMuscle
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground'
+              )}
+            >
+              {t('exerciseLibrary.allMuscles')}
+            </button>
+            {MUSCLE_GROUPS.map(muscle => (
+              <button
+                key={muscle}
+                onClick={() => setActiveMuscle(activeMuscle === muscle ? null : muscle)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-[10px] font-mono tracking-widest whitespace-nowrap transition-all duration-150 uppercase',
+                  activeMuscle === muscle
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground/60 hover:text-muted-foreground'
+                )}
+              >
+                {t(getMuscleGroupLabelKey(muscle)).toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spacer when filters are collapsed */}
+      {!showMoreFilters && <div className="mb-4" />}
+
+      {/* ── Loading state ───────────────────────────────────────────────── */}
+      {loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-xl bg-muted p-5 animate-pulse">
+              <div className="h-5 w-3/4 bg-muted rounded mb-3" />
+              <div className="h-3 w-full bg-muted rounded mb-2" />
+              <div className="h-3 w-1/2 bg-muted rounded mb-4" />
+              <div className="h-5 w-16 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Empty state ─────────────────────────────────────────────────── */}
+      {!loading && filtered.length === 0 && (
+        <div className="text-center py-24">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center">
+            <SearchIcon className="size-7 text-muted-foreground/50" />
+          </div>
+          <p className="text-sm text-muted-foreground mb-1">{t('exerciseLibrary.noExercisesFound')}</p>
+          <p className="text-xs text-muted-foreground/60 mb-6">{t('exerciseLibrary.tryOtherFilter')}</p>
+          {search.length >= 3 && (
+            <button
+              onClick={() => doWgerSearch(search)}
+              disabled={wgerLoading}
+              className="px-5 py-2.5 rounded-lg text-sm font-mono tracking-wide bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all disabled:opacity-50"
+            >
+              {wgerLoading ? t('exerciseLibrary.searching') : t('exerciseLibrary.searchWger')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Exercise grid ───────────────────────────────────────────────── */}
+      {!loading && filtered.length > 0 && (
+        <div data-testid="exercise-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {visible.map(ex => {
+            const catStyle = getCategoryStyle(ex.category)
+            const muscleList = l(ex.muscles).split(',').map(m => m.trim()).filter(Boolean)
+            return (
+              <button
+                key={ex.id}
+                onClick={() => navigate(`/exercises/${ex.slug || ex.id}`)}
+                className="group text-left rounded-xl bg-muted/80 overflow-hidden hover:bg-muted/80 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gold-400/30"
+              >
+                {/* Thumbnail or category placeholder */}
+                <div className="relative">
+                  {/* Miniatura por el resolutor canónico (#608). `demoImages` aquí son
+                      los `default_images` de `exercises_catalog` —nombres de fichero
+                      crudos— salvo en el camino de respaldo del catálogo empaquetado,
+                      donde ya son URLs absolutas de wger; el resolutor distingue los dos.
+                      La media estática se indexa por `slug` (identidad canónica), no por
+                      el id aleatorio de PocketBase, que es lo que direcciona el fichero. */}
+                  <ExerciseThumbnail
+                    exercise={{ id: ex.id, youtube: ex.youtube }}
+                    catalogKey={ex.slug || ex.id}
+                    catalogRecord={{
+                      pbRecordId: ex.id,
+                      defaultImages: ex.demoImages,
+                      defaultVideo: ex.demoVideo,
+                    }}
+                    alt={l(ex.name)}
+                    className="h-36 bg-muted overflow-hidden"
+                    imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fallback={
+                      <div className={cn('h-24 flex items-center justify-center', catStyle.bg || 'bg-muted/50')}>
+                        <CategoryIcon category={ex.category} />
+                      </div>
+                    }
+                  />
+                  {/* Favorite star */}
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFavorite(ex.id) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); toggleFavorite(ex.id) } }}
+                    className={cn(
+                      'absolute top-2 right-2 size-7 rounded-full flex items-center justify-center transition-all duration-150',
+                      isFavorite(ex.id)
+                        ? 'bg-amber-400/20 text-amber-400'
+                        : 'bg-background/60 backdrop-blur text-muted-foreground/40 opacity-0 group-hover:opacity-100'
+                    )}
+                  >
+                    <svg className="size-3.5" viewBox="0 0 24 24" fill={isFavorite(ex.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </span>
+                </div>
+
+                <div className="p-4">
+                  {/* Priority dot + Name + Program badge */}
+                  <div className="flex items-start gap-2.5 mb-2">
+                    <div className={cn('size-2 rounded-full mt-1.5 flex-shrink-0', PRIORITY_DOT[ex.priority])} />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-bebas text-lg tracking-wide leading-tight line-clamp-2 group-hover:text-gold-400 transition-colors duration-150 uppercase">
+                        {l(ex.name)}
+                      </span>
+                      {programExerciseIds.has(ex.id) && (
+                        <span className="inline-block ml-1.5 text-[8px] font-mono tracking-widest text-gold-400 bg-gold-500/10 border border-gold-500/20 rounded px-1.5 py-0.5 align-middle uppercase">
+                          {t('exerciseLibrary.inProgram')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Muscles dot-separated */}
+                  <p className="text-[11px] text-muted-foreground line-clamp-1 mb-3 pl-[18px]">
+                    {muscleList.join(' · ')}
+                  </p>
+
+                  {/* Category badge + difficulty + sets x reps */}
+                  <div className="flex items-center justify-between gap-2 pl-[18px]">
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-[9px] px-2 py-0.5 font-mono tracking-widest border',
+                          catStyle.text, catStyle.bg, catStyle.border
+                        )}
+                      >
+                        {t(`exerciseLibrary.category.${ex.category}`).toUpperCase()}
+                      </Badge>
+                      {ex.difficulty && DIFFICULTY_STYLE[ex.difficulty] && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[9px] px-2 py-0.5 font-mono tracking-widest border',
+                            DIFFICULTY_STYLE[ex.difficulty].text,
+                            DIFFICULTY_STYLE[ex.difficulty].bg,
+                            DIFFICULTY_STYLE[ex.difficulty].border
+                          )}
+                        >
+                          {t(`difficulty.${ex.difficulty}`).toUpperCase()}
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-bebas text-gold-400 tracking-wide">
+                      {ex.sets} x {ex.reps}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Show more (incremental rendering) ──────────────────────────── */}
+      {!loading && filtered.length > visibleCount && (
+        <div className="text-center mt-8">
+          <button
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="px-6 py-3 rounded-full text-[11px] font-mono tracking-widest uppercase border border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-all"
+          >
+            {t('exerciseLibrary.showMore', { count: filtered.length - visibleCount })}
+          </button>
+        </div>
+      )}
+
+      {/* ── "Search more" link when few local results ──────────────────── */}
+      {!loading && filtered.length > 0 && filtered.length < 3 && search.length >= 3 && wgerResults.length === 0 && (
+        <div className="text-center mt-6">
+          <button
+            onClick={() => doWgerSearch(search)}
+            disabled={wgerLoading}
+            className="text-xs font-mono tracking-wide text-sky-400/70 hover:text-sky-400 transition-colors disabled:opacity-50"
+          >
+            {wgerLoading ? t('exerciseLibrary.searching') : t('exerciseLibrary.searchMoreWger')}
+          </button>
+        </div>
+      )}
+
+      {/* ── wger results ──────────────────────────────────────────────── */}
+      {wgerResults.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono tracking-widest text-sky-400 uppercase">{t('exerciseLibrary.wgerResults')}</span>
+              <span className="text-[10px] text-muted-foreground">({wgerResults.length})</span>
+            </div>
+            <button
+              onClick={clearResults}
+              className="text-[10px] font-mono tracking-widest text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              {t('common.close')}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wgerResults.map(suggestion => (
+              <WgerResultCard
+                key={suggestion.data.id}
+                suggestion={suggestion}
+                onImport={async (wgerId) => {
+                  try {
+                    await importExercise(wgerId)
+                    setImportedIds(prev => new Set(prev).add(wgerId))
+                    // El catálogo está cacheado media hora: se invalida para que
+                    // el recién importado aparezca en la lista.
+                    queryClient.invalidateQueries({ queryKey: qk.exerciseCatalog })
+                  } catch (err) {
+                    console.error('Import failed:', err)
+                  }
+                }}
+                importing={importing.has(suggestion.data.id)}
+                imported={importedIds.has(suggestion.data.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── wger error ────────────────────────────────────────────────── */}
+      {wgerError && wgerResults.length === 0 && !wgerLoading && (
+        <div className="text-center mt-6">
+          <p className="text-xs text-muted-foreground/60">{wgerError}</p>
+        </div>
+      )}
+    </div>
+  )
+}

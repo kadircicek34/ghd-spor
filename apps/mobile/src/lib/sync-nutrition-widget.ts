@@ -1,0 +1,93 @@
+/**
+ * Sincroniza los widgets de nutrición: escribe el snapshot en AsyncStorage
+ * y fuerza el refresh de NutritionWidget + NutritionRingWidget + MealStreakWidget
+ * + WaterWidget.
+ * Best-effort: nunca lanza (un fallo de widget no rompe la app).
+ */
+import { Platform } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Sentry from '@sentry/react-native'
+import i18n from 'i18next'
+import { todayStr, getTimezone } from '@calistenia/core/lib/dateUtils'
+import { NUTRITION_WIDGET_SNAPSHOT_KEY, type NutritionWidgetSnapshot } from './nutrition-widget-snapshot'
+import type { DailyTotals, NutritionGoal } from '@calistenia/core/types'
+
+let lastJson: string | null = null
+
+/** Racha de comidas — mismo dato que `nutrition_coach_insights.streaks.currentGood`,
+ *  calculado por `upsertDailyInsight` (core). Nunca se recalcula aquí. */
+export interface MealStreakArgs {
+  mealStreak: number
+  mealStreakToday: boolean
+}
+
+/** ml consumidos / meta diaria de agua (`useWater`). Se sincroniza tal cual,
+ *  sin recalcular: la mutación optimista de `useWater` ya es la fuente de
+ *  verdad y persiste offline-first. */
+export interface WaterWidgetArgs {
+  waterMl: number
+  waterGoalMl: number
+}
+
+export async function syncNutritionWidget(
+  totals: DailyTotals,
+  goals: NutritionGoal | null,
+  meal: MealStreakArgs,
+  water: WaterWidgetArgs,
+): Promise<void> {
+  if (Platform.OS !== 'android') return
+  try {
+    const snapshot: NutritionWidgetSnapshot = {
+      date: todayStr(),
+      calories: totals.calories,
+      protein: totals.protein,
+      carbs: totals.carbs,
+      fat: totals.fat,
+      calorieGoal: goals?.dailyCalories ?? 0,
+      proteinGoal: goals?.dailyProtein ?? 0,
+      carbsGoal: goals?.dailyCarbs ?? 0,
+      fatGoal: goals?.dailyFat ?? 0,
+      mealStreak: meal.mealStreak,
+      mealStreakToday: meal.mealStreakToday,
+      waterMl: water.waterMl,
+      waterGoalMl: water.waterGoalMl,
+      lang: i18n.language?.startsWith('en') ? 'en' : 'es',
+      tz: getTimezone(),
+    }
+
+    const json = JSON.stringify(snapshot)
+    if (json === lastJson) return
+    lastJson = json
+
+    await AsyncStorage.setItem(NUTRITION_WIDGET_SNAPSHOT_KEY, json)
+    const { requestWidgetUpdate } = await import('react-native-android-widget')
+    const React = await import('react')
+    const { NutritionWidget } = await import('../widgets/NutritionWidget')
+    const { NutritionRingWidget } = await import('../widgets/NutritionRingWidget')
+    const { MealStreakWidget } = await import('../widgets/MealStreakWidget')
+    const { WaterWidget } = await import('../widgets/WaterWidget')
+
+    await requestWidgetUpdate({
+      widgetName: 'NutritionWidget',
+      renderWidget: () => React.createElement(NutritionWidget, { snapshot, today: todayStr() }),
+      widgetNotFound: () => {},
+    })
+    await requestWidgetUpdate({
+      widgetName: 'NutritionRingWidget',
+      renderWidget: () => React.createElement(NutritionRingWidget, { snapshot, today: todayStr() }),
+      widgetNotFound: () => {},
+    })
+    await requestWidgetUpdate({
+      widgetName: 'MealStreakWidget',
+      renderWidget: () => React.createElement(MealStreakWidget, { snapshot, today: todayStr() }),
+      widgetNotFound: () => {},
+    })
+    await requestWidgetUpdate({
+      widgetName: 'WaterWidget',
+      renderWidget: () => React.createElement(WaterWidget, { snapshot, today: todayStr() }),
+      widgetNotFound: () => {},
+    })
+  } catch (e) {
+    Sentry.captureException(e)
+  }
+}
