@@ -24,7 +24,7 @@
     "@calistenia/core": "file:../packages/core",
     "@hono/node-server": "^2.1.1",
     "@langfuse/core": "^5.10.1",
-    "@langfuse/otel": "^5.10.1",
+    "@langfuse/otel": "^6.1.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@opentelemetry/sdk-node": "^0.222.0",
     "ai": "^7.0.48",
